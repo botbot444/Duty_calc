@@ -344,15 +344,25 @@ Notes from B5:
 
 ### B6 – AI integration layer (Days 6–8)
 
-- [ ] `IdentificationClient` interface; `FakeIdentificationClient`; `HttpIdentificationClient` (built once the AI engineer's endpoint exists); binding chosen by config
-- [ ] `AiResponseValidator`: schema check, unknown IDs dropped, status values enforced
-- [ ] `ProductIdentificationService`: text and image flows, clarification loop (max 2 rounds), fallback to plain search on error
-- [ ] Records migration: `ai_product_analyses`; link `calculations.ai_product_analysis_id`
-- [ ] Image upload handling: validation by content, private disk, delete after analysis
-- [ ] `POST /api/identify/text`, `/api/identify/image`, `/api/identify/clarify`
-- [ ] Tests with the fake client for every status; bad JSON; timeout; unknown IDs; renamed `.exe`; oversize file; image deleted after analysis
+- [x] `IdentificationClient` interface; `FakeIdentificationClient`; `HttpIdentificationClient` (built once the AI engineer's endpoint exists); binding chosen by config
+- [x] `AiResponseValidator`: schema check, unknown IDs dropped, status values enforced
+- [x] `ProductIdentificationService`: text and image flows, clarification loop (max 2 rounds), fallback to plain search on error
+- [x] Records migration: `ai_product_analyses`; link `calculations.ai_product_analysis_id`
+- [x] Image upload handling: validation by content, private disk, delete after analysis
+- [x] `POST /api/identify/text`, `/api/identify/image`, `/api/identify/clarify`
+- [x] Tests with the fake client for every status; bad JSON; timeout; unknown IDs; renamed `.exe`; oversize file; image deleted after analysis
 
 **Gate:** both routes reach the same selection step and the same engine in tests.
+
+Notes from B6 (share the first four with the AI engineer):
+
+- `HttpIdentificationClient` is written against the section 8 contract, but has not run against the real service yet. To switch, set `IDENTIFICATION_DRIVER=http`, `IDENTIFICATION_URL` and `IDENTIFICATION_API_KEY` in `.env`. The key is sent as `Authorization: Bearer <key>`.
+- The photo goes in `image_ref` as a base64 data URI (`data:image/png;base64,...`), not a URL: the photo is on a private disk and is deleted straight after the call. Clarification rounds send `image_ref: null`, plus the original description and every question and answer so far.
+- Laravel keeps only ranked IDs it sent as candidates that are active catalogue items. Anything else, including HS codes, is dropped and logged in `dropped_ids`. A label other than High/Medium/Low becomes Low.
+- At most 3 clarification questions are used per round, and a third round is never sent. If the AI asks again in round 2, the current ranking is shown instead.
+- Text identification sends the search results as candidates. If search finds nothing and the catalogue has at most 30 usable items, it sends the whole catalogue. Photos always send the whole catalogue while it is that small.
+- The analysis column for the AI's `attributes` is `product_attributes`, because `attributes` clashes with Eloquent.
+- Old analyses are pruned with estimates (90 days) unless a saved estimate still uses them.
 
 ### B7 – Admin backend (Days 9–10)
 

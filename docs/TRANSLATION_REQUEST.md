@@ -228,7 +228,7 @@ suggestions, **confirms** it, enters **trade details**, and sees the **result**.
 | D4.6 | None of these | | | Button |
 | D4.7 | We couldn't find a match. Try another word or check the spelling. | | | |
 | D4.8 | We couldn't find a reliable match. Try describing the product in a different way. | | | |
-| D4.9 | Photo checking is not available right now, so these are search results. | | | |
+| D4.9 | Smart matching is not available right now, so these are plain search results. | | | When the AI service is down after typing a product name |
 | D4.10 | We need a little more detail | | | Heading when the app asks the trader a question |
 | D4.11 | Answer the question below so we can find the right product. | | | |
 | D4.12 | Your answer | | | Label above the answer box |

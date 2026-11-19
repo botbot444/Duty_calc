@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\SelectProductRequest;
 use App\Services\Catalogue\ProductSelection;
 use App\Services\Estimate\EstimateService;
+use App\Services\Identification\ProductIdentificationService;
 use Illuminate\Http\JsonResponse;
 
 class SelectionController extends Controller
@@ -13,10 +14,19 @@ class SelectionController extends Controller
      * POST /api/selection – the trader confirms one catalogue item. Returns the item and the
      * inputs its rules need, so the trade-details form shows only those fields.
      */
-    public function store(SelectProductRequest $request, ProductSelection $selection, EstimateService $estimates): JsonResponse
-    {
+    public function store(
+        SelectProductRequest $request,
+        ProductSelection $selection,
+        EstimateService $estimates,
+        ProductIdentificationService $identification,
+    ): JsonResponse {
         $item = $request->item();
-        $selection->confirm($item);
+        $analysisId = $request->analysisId();
+
+        if ($analysisId !== null) {
+            $identification->recordConfirmation($analysisId, $item);
+        }
+        $selection->confirm($item, $analysisId);
 
         $required = [];
         foreach ($estimates->requiredInputs($item) as $field => $unit) {

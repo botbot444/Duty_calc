@@ -35,4 +35,20 @@ return [
         ],
     ],
 
+    /*
+     * Product identification (the AI engineer's service). It only ranks catalogue IDs that
+     * Laravel sends it; it never sets a rate. 'fake' needs no network and is used in tests
+     * and local development until the real endpoint exists.
+     */
+    'identification' => [
+        'driver' => env('IDENTIFICATION_DRIVER', 'fake'),   // fake | http
+        'url' => env('IDENTIFICATION_URL'),
+        'key' => env('IDENTIFICATION_API_KEY'),
+        'model' => env('IDENTIFICATION_MODEL'),
+        'timeout' => (int) env('IDENTIFICATION_TIMEOUT', 15),   // seconds
+        'retries' => 1,
+        'max_candidates' => 30,          // send the whole catalogue when it is this small
+        'max_clarification_rounds' => 2,
+    ],
+
 ];
