@@ -327,10 +327,18 @@ Engine decisions taken in B3 (settings in `config/dutycalc.php`; none of them is
 
 ### B5 – Selection, estimates and saved results (1 day)
 
-- [ ] `POST /api/selection`, `GET /api/routes`, `GET /api/currencies`, `POST /api/estimates`, `GET /estimates/{uuid}`
-- [ ] Form Requests for selection and estimates
-- [ ] `expires_at` set to 90 days; `estimates:prune` command scheduled daily in `routes/console.php`
-- [ ] Feature tests: full text journey (search, select, estimate, fetch); refuses an unconfirmed item; `unsupported` and `incomplete` are saved and returned; CSRF enforced on POSTs; unknown UUID gives 404
+- [x] `POST /api/selection`, `GET /api/routes`, `GET /api/currencies`, `POST /api/estimates`, `GET /estimates/{uuid}`
+- [x] Form Requests for selection and estimates
+- [x] `expires_at` set to 90 days; `estimates:prune` command scheduled daily in `routes/console.php`
+- [x] Feature tests: full text journey (search, select, estimate, fetch); refuses an unconfirmed item; `unsupported` and `incomplete` are saved and returned; CSRF enforced on POSTs; unknown UUID gives 404
+
+Notes from B5:
+
+- The confirmed item lives in the session (`ProductSelection`), shared by the text route now and the photo route in B6. `POST /api/estimates` must name that same item.
+- An unknown or unsupported trade route is not a 422: the engine answers `unsupported` and the request is saved, so the trader sees why.
+- A currency with no rate in force is a 422 (`GET /api/currencies` lists the valid ones).
+- Numbers must be sent as strings ("10000.50"); JSON numbers, thousands separators and exponents are refused.
+- The frontend sends the CSRF token from Laravel's `XSRF-TOKEN` cookie (or a `<meta name="csrf-token">` tag) as the `X-XSRF-TOKEN` / `X-CSRF-TOKEN` header.
 
 **Gate:** text journey works end to end through HTTP in tests.
 

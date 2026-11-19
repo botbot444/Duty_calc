@@ -7,17 +7,17 @@ use App\Models\CatalogueItem;
 use App\Models\ProductAlias;
 use App\Services\Catalogue\CatalogueSearchService;
 use Carbon\Carbon;
-use Illuminate\Foundation\Testing\DatabaseTruncation;
+use Tests\Support\FullTextDatabase;
 use Tests\Support\TariffFixtures;
 use Tests\TestCase;
 
 /**
- * DatabaseTruncation, not RefreshDatabase: InnoDB FULLTEXT does not see rows that are not
- * committed yet, so a test wrapped in a transaction would find nothing through MATCH ... AGAINST.
+ * FullTextDatabase (truncation), not RefreshDatabase: InnoDB FULLTEXT does not see rows that
+ * are not committed yet, so a test wrapped in a transaction would find nothing.
  */
 class CatalogueSearchTest extends TestCase
 {
-    use DatabaseTruncation;
+    use FullTextDatabase;
     use TariffFixtures;
 
     protected function setUp(): void
@@ -47,12 +47,6 @@ class CatalogueSearchTest extends TestCase
     protected function tearDown(): void
     {
         Carbon::setTestNow();
-
-        // DatabaseTruncation empties tables *before* each test, so rows from the last one stay
-        // committed. Empty them afterwards too, or RefreshDatabase tests that run next would
-        // start on top of these rows.
-        $this->truncateDatabaseTables();
-
         parent::tearDown();
     }
 

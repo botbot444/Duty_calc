@@ -1,6 +1,9 @@
 <?php
 
 use App\Http\Controllers\CatalogueSearchController;
+use App\Http\Controllers\EstimateController;
+use App\Http\Controllers\ReferenceDataController;
+use App\Http\Controllers\SelectionController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -14,4 +17,13 @@ Route::get('/', function () {
  */
 Route::prefix('api')->name('api.')->group(function () {
     Route::get('catalogue/search', CatalogueSearchController::class)->name('catalogue.search');
+    Route::post('selection', [SelectionController::class, 'store'])->name('selection.store');
+    Route::get('routes', [ReferenceDataController::class, 'routes'])->name('routes');
+    Route::get('currencies', [ReferenceDataController::class, 'currencies'])->name('currencies');
+    Route::post('estimates', [EstimateController::class, 'store'])->name('estimates.store');
 });
+
+// A saved estimate. JSON for now; the Blade result page replaces it in the frontend phase.
+Route::get('estimates/{estimate}', [EstimateController::class, 'show'])
+    ->whereUuid('estimate')
+    ->name('estimates.show');
