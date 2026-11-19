@@ -1,0 +1,32 @@
+# Golden test cases – calculation engine
+
+Worked by hand on 2026-11-20 against the **test fixture rates** in
+`tests/Support/TariffFixtures.php`. The fixture rates are SAMPLE values (not from the ZRA tariff book).
+These cases check the engine's arithmetic and tax order. They do not check ZRA's real rates.
+
+**Checked by:** Claude (worked the figures by hand). **Still to do:** a clearing agent or ZRA checks the method
+(CIF basis, tax order, rounding) once verified rows are swapped in (plan, phase B8).
+
+Conventions used by every case:
+
+- Customs value = CIF = declared value + freight + insurance, each converted to ZMW and rounded to 2 dp.
+- Each charge is rounded once, to 2 dp, half up. A later charge's base uses the rounded earlier charges.
+- Total = sum of the rounded charges.
+- VAT base = customs value + customs duty (+ excise where the line has it).
+- Exchange rates: USD 1 = ZMW 26.50; TZS 1 = ZMW 0.0105.
+- Test date: 2026-11-20, Africa/Lusaka.
+
+| #  | Item (HS)            | Inputs                                                   | Working                                                                                      | Total (ZMW) |
+| -- | -------------------- | -------------------------------------------------------- | -------------------------------------------------------------------------------------------- | ----------- |
+| G1 | T-shirt (61091000)   | ZMW 10,000.00, freight 500.00, insurance 100.00          | CIF 10,600.00; duty 25% = 2,650.00; VAT 16% x 13,250.00 = 2,120.00                           | 4,770.00    |
+| G2 | T-shirt (61091000)   | USD 400, freight USD 50, insurance USD 10                | 10,600.00 + 1,325.00 + 265.00 = CIF 12,190.00; duty 3,047.50; VAT 16% x 15,237.50 = 2,438.00 | 5,485.50    |
+| G3 | Rice (10063000)      | ZMW 5,000.00, freight 300.00, insurance 0, 1,000 kg      | CIF 5,300.00; duty K1.50 x 1,000 = 1,500.00; VAT 16% x 6,800.00 = 1,088.00                   | 2,588.00    |
+| G4 | Sugar (17019900)     | ZMW 10,000.00, freight 0, insurance 0, 500 kg            | 40% = 4,000.00 vs K5 x 500 = 2,500.00, higher = 4,000.00; VAT 16% x 14,000.00 = 2,240.00     | 6,240.00    |
+| G5 | Sugar (17019900)     | ZMW 2,000.00, freight 0, insurance 0, 500 kg             | 40% = 800.00 vs K5 x 500 = 2,500.00, higher = 2,500.00; VAT 16% x 4,500.00 = 720.00          | 3,220.00    |
+| G6 | Soft drink (22021000)| ZMW 8,000.00, freight 400.00, insurance 100.00           | CIF 8,500.00; duty 25% = 2,125.00; excise 3% x 10,625.00 = 318.75; VAT 16% x 10,943.75 = 1,751.00 | 4,194.75 |
+| G7 | Cooking oil (15079000)| ZMW 6,000.00, freight 200.00, insurance 50.00, 400 kg   | CIF 6,250.00; duty 5% = 312.50 plus K0.50 x 400 = 200.00, sum = 512.50; VAT 16% x 6,762.50 = 1,082.00 | 1,594.50 |
+| G8 | Phone charger (85044000)| TZS 1,000,000, freight TZS 50,000, insurance 0        | 10,500.00 + 525.00 + 0.00 = CIF 11,025.00; duty 15% = 1,653.75; VAT 16% x 12,678.75 = 2,028.60 | 3,682.35 |
+| G9 | T-shirt (61091000)   | USD 10.01, freight 0, insurance 0                        | 10.01 x 26.50 = 265.265, rounded 265.27; duty 25% = 66.3175, rounded 66.32; VAT 16% x 331.59 = 53.0544, rounded 53.05 | 119.37 |
+| R1 | T-shirt (61091000)   | ZMW 100.02, freight 0, insurance 0                       | duty 25% = 25.005, half up 25.01 (half even would give 25.00); VAT 16% x 125.03 = 20.0048, rounded 20.00 | 45.01 |
+| L1 | T-shirt, 31 Dec 23:59 Lusaka | as G1                                            | VAT 16% (rule ends 2026-12-31) = 2,120.00                                                   | 4,770.00    |
+| L2 | T-shirt, 1 Jan 00:01 Lusaka  | as G1                                            | VAT 16.5% (rule from 2027-01-01) x 13,250.00 = 2,186.25                                     | 4,836.25    |

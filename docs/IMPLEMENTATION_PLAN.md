@@ -300,13 +300,22 @@ Each phase ends with a gate. Do not start the next phase until the gate passes.
 
 ### B3 – Calculation engine (Days 2–4)
 
-- [ ] Value objects: `EstimateRequest`, `EstimateResult`, `LineItem`
-- [ ] `RuleEvaluator` for ad valorem, specific and compound (sum / max)
-- [ ] `EstimateService` following the 9 steps in section 6
-- [ ] Records migrations: `calculations`, `calculation_breakdowns`
-- [ ] Unit and feature tests from section 6, expected amounts as strings, worked out in a spreadsheet first
+- [x] Value objects: `EstimateRequest`, `EstimateResult`, `LineItem`
+- [x] `RuleEvaluator` for ad valorem, specific and compound (sum / max)
+- [x] `EstimateService` following the 9 steps in section 6
+- [x] Records migrations: `calculations`, `calculation_breakdowns`
+- [x] Unit and feature tests from section 6, expected amounts as strings, worked out by hand first (`docs/golden-cases.md`)
 
 **Gate:** all golden and edge-case tests pass.
+
+Engine decisions taken in B3 (settings in `config/dutycalc.php`; none of them is a rate):
+
+- **Blank freight or insurance:** counted as ZMW 0.00 and recorded in `assumptions` (`missing_freight_insurance = zero`). Set it to `incomplete` to ask the trader instead. Still to be agreed from ZRA guidance.
+- **Required charges:** every line must have customs duty and VAT in force (`required_tax_types`), or the result is `unsupported`. A charge that does not apply is entered as a 0% rule.
+- **Ended rates:** if any charge's rule has ended with no new rule in force, the result is `unsupported`, never an estimate without that charge.
+- **Specific amounts** must be in ZMW; any other currency is `unsupported`.
+- **Rounding:** converted values, then each charge, are rounded once to 2 dp half up; later bases use the rounded earlier charges.
+- **Origin-specific rules** (preferences) are ignored; every estimate records "standard rate, no trade preference claimed".
 
 ### B4 – Catalogue search (half a day)
 

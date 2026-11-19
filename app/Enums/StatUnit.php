@@ -11,4 +11,13 @@ enum StatUnit: string
     case Kilogram = 'kg';
     case Unit = 'u';
     case Litre = 'l';
+
+    public function label(): string
+    {
+        return match ($this) {
+            self::Kilogram => 'kilograms',
+            self::Unit => 'units (pieces)',
+            self::Litre => 'litres',
+        };
+    }
 }
