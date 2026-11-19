@@ -291,10 +291,10 @@ Each phase ends with a gate. Do not start the next phase until the gate passes.
 
 ### B2 – Sample data and import validation (half a day)
 
-- [ ] `database/data/sample/` CSVs: sources, tariff lines, catalogue items, aliases, rules, countries, trade routes, exchange rates. The single source is named "SAMPLE – not verified, for testing only"
-- [ ] Sample lines cover: ad valorem duty + VAT; specific duty per kg + VAT; compound "X% or K Y per kg" (max); a line with excise so VAT includes it
-- [ ] `TariffDataValidator`: existing source, page number, 8-digit HS code, allowed enum values, `base_components` only earlier sequences, no overlapping dates
-- [ ] `TariffCsvImporter` used by `SampleTariffSeeder` (and later by the admin import and `VerifiedTariffSeeder`)
+- [x] `database/data/sample/` CSVs: sources, tariff lines, catalogue items, aliases, rules, countries, trade routes, exchange rates. The single source is named "SAMPLE – not verified, for testing only"
+- [x] Sample lines cover: ad valorem duty + VAT; specific duty per kg + VAT; compound "X% or K Y per kg" (max); a line with excise so VAT includes it
+- [x] `TariffDataValidator`: existing source, page number, 8-digit HS code, allowed enum values, `base_components` only earlier sequences, no overlapping dates
+- [x] `TariffCsvImporter` used by `SampleTariffSeeder` (and later by the admin import and `VerifiedTariffSeeder`)
 
 **Gate:** `php artisan db:seed --class=SampleTariffSeeder` loads; validator tests reject each kind of bad row.
 

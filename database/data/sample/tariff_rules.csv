@@ -1,0 +1,16 @@
+hs_code,tax_type,sequence,method,rate,specific_amount,specific_currency,combine,base_components,origin_country,effective_from,effective_to,source_name,source_page
+61091000,customs_duty,1,ad_valorem,0.25,,,,customs_value,,2026-01-01,,"SAMPLE – not verified, for testing only",1
+61091000,vat,3,ad_valorem,0.16,,,,customs_value|customs_duty,,2026-01-01,2026-12-31,"SAMPLE – not verified, for testing only",1
+10063000,customs_duty,1,specific,,1.50,ZMW,,customs_value,,2026-01-01,,"SAMPLE – not verified, for testing only",1
+10063000,vat,3,ad_valorem,0.16,,,,customs_value|customs_duty,,2026-01-01,2026-12-31,"SAMPLE – not verified, for testing only",1
+17019900,customs_duty,1,compound,0.40,5.00,ZMW,max,customs_value,,2026-01-01,,"SAMPLE – not verified, for testing only",1
+17019900,vat,3,ad_valorem,0.16,,,,customs_value|customs_duty,,2026-01-01,2026-12-31,"SAMPLE – not verified, for testing only",1
+22021000,customs_duty,1,ad_valorem,0.25,,,,customs_value,,2026-01-01,,"SAMPLE – not verified, for testing only",1
+22021000,excise,2,ad_valorem,0.03,,,,customs_value|customs_duty,,2026-01-01,,"SAMPLE – not verified, for testing only",1
+22021000,vat,3,ad_valorem,0.16,,,,customs_value|customs_duty|excise,,2026-01-01,2026-12-31,"SAMPLE – not verified, for testing only",1
+85044000,customs_duty,1,ad_valorem,0.15,,,,customs_value,,2026-01-01,,"SAMPLE – not verified, for testing only",1
+85044000,vat,3,ad_valorem,0.16,,,,customs_value|customs_duty,,2026-01-01,2026-12-31,"SAMPLE – not verified, for testing only",1
+85287200,customs_duty,1,ad_valorem,0.25,,,,customs_value,,2026-01-01,,"SAMPLE – not verified, for testing only",1
+85287200,vat,3,ad_valorem,0.16,,,,customs_value|customs_duty,,2026-01-01,2026-12-31,"SAMPLE – not verified, for testing only",1
+15079000,customs_duty,1,compound,0.05,0.50,ZMW,sum,customs_value,,2026-01-01,,"SAMPLE – not verified, for testing only",1
+15079000,vat,3,ad_valorem,0.16,,,,customs_value|customs_duty,,2026-01-01,2026-12-31,"SAMPLE – not verified, for testing only",1
