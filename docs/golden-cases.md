@@ -1,11 +1,23 @@
 # Golden test cases – calculation engine
 
-Worked by hand on 2026-11-20 against the **test fixture rates** in
+Worked by hand on 2026-11-19 against the **test fixture rates** in
 `tests/Support/TariffFixtures.php`. The fixture rates are SAMPLE values (not from the ZRA tariff book).
 These cases check the engine's arithmetic and tax order. They do not check ZRA's real rates.
 
-**Checked by:** Claude (worked the figures by hand). **Still to do:** a clearing agent or ZRA checks the method
-(CIF basis, tax order, rounding) once verified rows are swapped in (plan, phase B8).
+Each case is a test in `tests/Feature/Estimate/EstimateServiceTest.php` (`goldenCases` data provider, plus the two
+Lusaka date tests). The suite fails if the engine's figures move.
+
+## Sign-off
+
+| What is checked | Checked by | Against | Date | Status |
+| --- | --- | --- | --- | --- |
+| Arithmetic of G1–G9, R1, L1, L2 (each line worked by hand, then matched by the tests) | Claude (AI assistant), for the team | Test fixture rates in `tests/Support/TariffFixtures.php` | 2026-11-19 | Done |
+| Method: CIF basis, tax order (duty → excise → VAT), VAT base, rounding 2 dp half up | Clearing agent at Nakonde, or ZRA | ZRA guidance and the Customs Tariff Book | – | **Open** |
+| The same cases recomputed on verified rates | Team member + second checker | ZRA Customs Tariff Book (`docs/Customs-Tariff-Book.pdf`), page per row | – | **Open**: needs verified rows (plan, open question 2) |
+
+When verified rows arrive, add a second table here with the real HS codes, rates and page numbers. Have the
+clearing agent sign off at least one case per method (ad valorem, specific, compound max, compound sum, excise)
+before the demo.
 
 Conventions used by every case:
 

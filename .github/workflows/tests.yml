@@ -1,0 +1,75 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  tests:
+    name: PHP 8.2 / ${{ matrix.database }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # MariaDB 10.4 is what XAMPP ships (local development); MySQL 8 is the likely host.
+        database: ['mariadb:10.4', 'mysql:8.0']
+
+    services:
+      db:
+        image: ${{ matrix.database }}
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: dutycalc_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      DB_CONNECTION: mysql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_DATABASE: dutycalc_test
+      DB_USERNAME: root
+      DB_PASSWORD: root
+      IDENTIFICATION_DRIVER: fake   # never call a real AI service in CI
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP 8.2 (same minor version as XAMPP)
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, pdo_mysql, fileinfo, bcmath
+          coverage: none
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache/files
+          key: composer-${{ hashFiles('composer.lock') }}
+
+      - name: Validate composer.json and lock file
+        run: composer validate --strict
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Code style (Pint)
+        run: vendor/bin/pint --test
+
+      - name: Migrate and load the sample data
+        run: php artisan migrate:fresh --seed --force
+
+      - name: Run tests
+        run: php artisan test

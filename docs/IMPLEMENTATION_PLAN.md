@@ -386,10 +386,10 @@ Notes from B7:
 
 ### B8 – Hardening and handover (Days 11–12, shared with frontend)
 
-- [ ] GitHub Actions: PHP 8.2 + MySQL service, `composer install`, `php artisan test` on every push
-- [ ] README: setup on XAMPP, required `.env` keys (no values), endpoint list with request/response examples, deployment notes (HTTPS, MySQL, cron for the scheduler)
-- [ ] Supported products and routes list, known issues, engine limitations
-- [ ] Golden test cases with who checked them and against which source
+- [x] GitHub Actions: PHP 8.2 + MySQL service, `composer install`, `php artisan test` on every push (`.github/workflows/tests.yml`: MariaDB 10.4 and MySQL 8, plus Pint and a fresh migrate and seed; first run on the next push)
+- [x] README: setup on XAMPP, required `.env` keys (no values), endpoint list with request/response examples, deployment notes (HTTPS, MySQL, cron for the scheduler)
+- [x] Supported products and routes list, known issues, engine limitations (`docs/HANDOVER.md`)
+- [x] Golden test cases with who checked them and against which source (`docs/golden-cases.md`; the clearing-agent or ZRA sign-off is still open)
 
 ---
 
@@ -442,11 +442,11 @@ If tariff data is late, Days 2–4 still proceed on labelled sample rows. The Da
 
 **Handover checklist**
 
-- [ ] Migrations and seeders with source and effective date on every tariff row
-- [ ] README: setup, required `.env` keys (no values), endpoint list with request/response examples
-- [ ] Supported products and routes list, known issues, engine limitations
-- [ ] Golden test cases with who checked them and against which source
-- [ ] Demo steps and demo data
+- [x] Migrations and seeders with source and effective date on every tariff row (SAMPLE data; verified rows still to come)
+- [x] README: setup, required `.env` keys (no values), endpoint list with request/response examples
+- [x] Supported products and routes list, known issues, engine limitations
+- [ ] Golden test cases with who checked them and against which source (arithmetic done; clearing-agent or ZRA sign-off open)
+- [x] Demo steps and demo data (`docs/HANDOVER.md`; the live demo needs the frontend, and the photo step needs the real AI service)
 
 ---
 
