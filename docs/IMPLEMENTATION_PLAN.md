@@ -277,15 +277,15 @@ Each phase ends with a gate. Do not start the next phase until the gate passes.
 - [x] Add `/docs/*.pdf` to `.gitignore`
 - [x] Create the test database and make sure `phpunit.xml` names it
 - [x] `composer require brick/math`
-- [ ] `git init`, first commit, push to GitHub
+- [x] `git init`, first commit, push to GitHub
 
 **Gate:** `php artisan migrate` and `php artisan test` both run clean on MySQL.
 
 ### B1 – Reference schema (half a day)
 
-- [ ] Migrations in foreign-key order: `tariff_sources`, `tariff_lines`, `catalogue_items`, `product_aliases`, `tariff_rules`, `countries`, `trade_routes`, `exchange_rates`
-- [ ] Models with relationships, casts (`decimal:6`, `array` for JSON, `date`), `$fillable` lists; `CatalogueItem` with string key (`$incrementing = false`, `$keyType = 'string'`)
-- [ ] Indexes: FULLTEXT on `product_aliases.alias`; unique rule index from section 3; index on `tariff_rules (tariff_line_id, effective_from)`
+- [x] Migrations in foreign-key order: `tariff_sources`, `tariff_lines`, `catalogue_items`, `product_aliases`, `tariff_rules`, `countries`, `trade_routes`, `exchange_rates`
+- [x] Models with relationships, casts (`decimal:6`, `array` for JSON, `date`), `$fillable` lists; `CatalogueItem` with string key (`$incrementing = false`, `$keyType = 'string'`)
+- [x] Indexes: FULLTEXT on `product_aliases.alias`; unique rule index from section 3; index on `tariff_rules (tariff_line_id, effective_from)`. NULLs are distinct in a unique index, so the rule index uses a stored generated column `origin_key = COALESCE(origin_country, '')` in place of `origin_country`
 
 **Gate:** `php artisan migrate:fresh` runs clean; schema signed off by the team lead and AI engineer.
 
