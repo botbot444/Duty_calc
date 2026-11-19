@@ -319,9 +319,9 @@ Engine decisions taken in B3 (settings in `config/dutycalc.php`; none of them is
 
 ### B4 – Catalogue search (half a day)
 
-- [ ] `CatalogueSearchService`: FULLTEXT `MATCH ... AGAINST` in natural language mode, `LIKE` fallback for short or no-hit queries, top 10 with HS code and official description
-- [ ] `GET /api/catalogue/search` with a thin controller
-- [ ] Tests (with `DatabaseTruncation`): English, Bemba and Swahili aliases; a misspelling; a 2-letter alias; no results
+- [x] `CatalogueSearchService`: FULLTEXT `MATCH ... AGAINST` in natural language mode, `LIKE` fallback for short or no-hit queries, top 10 with HS code and official description
+- [x] `GET /api/catalogue/search` with a thin controller
+- [x] Tests (with `DatabaseTruncation`): English, Bemba and Swahili aliases; a misspelling; a 2-letter alias; no results. The test also truncates in `tearDown`, or its committed rows break the `RefreshDatabase` tests that run after it
 
 **Gate:** search tests pass.
 
