@@ -42,7 +42,8 @@ class SelectionController extends Controller
                 'stat_unit' => $item->tariffLine->stat_unit->value,
             ],
             'required_inputs' => (object) $required,
-            'optional_inputs' => ['freight', 'insurance'],
+            // Only the inputs a rule's base uses (export duty on FOB needs neither).
+            'optional_inputs' => $estimates->optionalInputs($item),
         ]);
     }
 }

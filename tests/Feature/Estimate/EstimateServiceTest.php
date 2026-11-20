@@ -16,7 +16,9 @@ use Tests\Support\TariffFixtures;
 use Tests\TestCase;
 
 /**
- * Expected amounts are worked out by hand in docs/golden-cases.md.
+ * Rule mechanics on the import charges (customs duty, excise, VAT), switched on by
+ * chargeImportTaxes(). Expected amounts are worked out by hand in docs/golden-cases.md.
+ * The export product itself is tested in ExportEstimateTest.
  */
 class EstimateServiceTest extends TestCase
 {
@@ -29,6 +31,7 @@ class EstimateServiceTest extends TestCase
 
         Carbon::setTestNow(Carbon::parse('2026-11-20 10:00', 'Africa/Lusaka'));
         config(['dutycalc.missing_freight_insurance' => 'zero']);
+        $this->chargeImportTaxes();
         $this->seedTariffFixtures();
     }
 

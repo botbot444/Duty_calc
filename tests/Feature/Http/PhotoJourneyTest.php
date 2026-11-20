@@ -45,8 +45,8 @@ class PhotoJourneyTest extends TestCase
 
     private function tradeDetails(): array
     {
-        return ['catalogue_item_id' => 'CAT-0004', 'trade_route_id' => $this->nakonde->id, 'declared_value' => '10000',
-            'currency' => 'ZMW', 'freight' => '0', 'insurance' => '0', 'quantity' => '500'];
+        return ['catalogue_item_id' => 'CAT-0004', 'trade_route_id' => $this->kasumbalesa->id, 'declared_value' => '10000',
+            'currency' => 'ZMW', 'quantity' => '500'];
     }
 
     public function test_photo_then_clarify_then_select_then_estimate_matches_the_text_route(): void
@@ -71,7 +71,7 @@ class PhotoJourneyTest extends TestCase
 
         // 4. The same engine.
         $photoEstimate = $this->postJson('/api/estimates', $this->tradeDetails())
-            ->assertCreated()->assertJsonPath('status', 'estimated')->assertJsonPath('total_estimated_charges', '6240.00');
+            ->assertCreated()->assertJsonPath('status', 'estimated')->assertJsonPath('total_estimated_charges', '500.00');   // export case E2
 
         $calc = Calculation::findOrFail($photoEstimate->json('estimate_id'));
         $this->assertSame($analysisId, $calc->ai_product_analysis_id);

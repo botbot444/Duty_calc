@@ -6,6 +6,10 @@ This file is the working copy that lives with the code. Plan only: no code has b
 
 Where the project brief and the developer brief (.docx) disagree, this plan follows the developer brief.
 
+> **2026-11-20 – export pivot.** DutyCalc now estimates Zambian export duty for goods going from Zambia to DR Congo
+> via Kasumbalesa, shown in USD with ZMW beside it. [EXPORT_PLAN.md](EXPORT_PLAN.md) overrides this plan where they
+> differ (route, charges, valuation basis, currency, sample data). The phase structure and rules below still apply.
+
 ---
 
 ## 1. Summary and scope

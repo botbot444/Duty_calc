@@ -1,9 +1,11 @@
 # DutyCalc – project context for Claude
 
-DutyCalc estimates customs duty, excise and VAT for small-scale cross-border traders importing into Zambia,
-before they reach the border. Hackathon MVP, 12-day build. **Current focus: backend only.**
+DutyCalc estimates the **Zambian export duty** for small-scale cross-border traders taking goods from Zambia into
+DR Congo (Kasumbalesa), before they reach the border. DR Congo charges are not included. Results show USD first, ZMW beside.
+Hackathon MVP. Backend done; **next: the frontend** (design direction A, https://claude.ai/artifact/Dqv9vQxGvkhzfuHQcP5HPv).
 
-The full plan is in `docs/IMPLEMENTATION_PLAN.md`. Read it before starting a task, and follow its build phases (B0–B8) and gates in order.
+The full plan is in `docs/IMPLEMENTATION_PLAN.md` (phases B0–B8, written for imports into Zambia). The export pivot
+in `docs/EXPORT_PLAN.md` overrides it where they differ. Read both before starting a task.
 Team copy of the plan: https://claude.ai/artifact/WRhatHmENUfJbFjThpCz33
 
 ## Stack and environment
@@ -44,4 +46,5 @@ Team copy of the plan: https://claude.ai/artifact/WRhatHmENUfJbFjThpCz33
 
 ## Out of scope
 
-STR and trade preferences, vehicle imports, USSD, payments, ASYCUDA, consignment tracking, AI usage limits, hosting (for now).
+STR and trade preferences, DR Congo charges, French, vehicle imports and exports, USSD, payments, ASYCUDA,
+consignment tracking, AI usage limits, hosting (for now).

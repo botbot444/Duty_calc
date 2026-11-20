@@ -26,6 +26,7 @@ final class EstimateResult
         public readonly array $valuation,
         public readonly array $lineItems,
         public readonly ?string $total,
+        public readonly ?array $display,
         public readonly ?string $tariffEffectiveDate,
         public readonly string $calculatedOn,
         public readonly array $assumptions,
@@ -58,7 +59,9 @@ final class EstimateResult
                 'border_post' => $route->border_post,
             ],
             valuation: [
-                'basis' => 'CIF',
+                // Estimates saved before engine 2.0.0 were always CIF.
+                'basis' => $calc->valuation_basis ?? ($calc->customs_value_zmw === null ? null : 'CIF'),
+                'value_for_duty_zmw' => $calc->value_for_duty_zmw ?? $calc->customs_value_zmw,
                 'input_currency' => $calc->input_currency,
                 'exchange_rate' => $calc->exchange_rate_value,
                 'exchange_rate_date' => $calc->exchange_rate_effective_from?->toDateString(),
@@ -72,6 +75,13 @@ final class EstimateResult
             ],
             lineItems: $calc->breakdowns->map(fn ($b) => LineItem::fromBreakdown($b))->values()->all(),
             total: $calc->total_zmw,
+            display: $calc->total_display === null ? null : [
+                'currency' => $calc->display_currency,
+                'exchange_rate' => $calc->display_rate_value,
+                'exchange_rate_date' => $calc->display_rate_effective_from?->toDateString(),
+                'exchange_rate_source' => $calc->display_rate_source,
+                'total' => $calc->total_display,
+            ],
             tariffEffectiveDate: $calc->tariff_effective_date?->toDateString(),
             calculatedOn: $calc->calculated_on->toDateString(),
             assumptions: $calc->assumptions,
@@ -92,6 +102,8 @@ final class EstimateResult
             'valuation' => $this->valuation,
             'line_items' => array_map(fn (LineItem $l) => $l->toArray(), $this->lineItems),
             'total_estimated_charges' => $this->total,
+            // Same total in the display currency (USD), shown first by the frontend. Null: show ZMW only.
+            'display' => $this->display,
             'tariff_effective_date' => $this->tariffEffectiveDate,
             'calculated_on' => $this->calculatedOn,
             'assumptions' => $this->assumptions,

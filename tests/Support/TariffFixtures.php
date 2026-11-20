@@ -23,18 +23,39 @@ trait TariffFixtures
 
     protected TradeRoute $mwami;
 
+    /** Export route (the product since the export pivot). */
+    protected TradeRoute $kasumbalesa;
+
+    /** Export route that is not supported. */
+    protected TradeRoute $mokambo;
+
     /** @var array<string, TariffLine> keyed by HS code */
     protected array $lines = [];
+
+    /**
+     * Switch the engine to the import charges (customs duty, excise, VAT). The import golden
+     * cases G1–L2 use it to test the rule mechanics; the product itself charges export duty only.
+     */
+    protected function chargeImportTaxes(): void
+    {
+        config([
+            'dutycalc.charged_tax_types' => ['customs_duty', 'excise', 'vat'],
+            'dutycalc.required_tax_types' => ['customs_duty', 'vat'],
+        ]);
+    }
 
     protected function seedTariffFixtures(): void
     {
         $this->fixtureSource = TariffSource::create(['name' => 'Test fixture source – not real rates', 'edition' => 'test']);
 
-        Country::create(['iso2' => 'ZM', 'name' => 'Zambia', 'is_destination' => true]);
+        Country::create(['iso2' => 'ZM', 'name' => 'Zambia', 'is_origin' => true, 'is_destination' => true]);
         Country::create(['iso2' => 'TZ', 'name' => 'Tanzania', 'is_origin' => true]);
         Country::create(['iso2' => 'MW', 'name' => 'Malawi', 'is_origin' => true]);
+        Country::create(['iso2' => 'CD', 'name' => 'DR Congo', 'is_destination' => true]);
         $this->nakonde = TradeRoute::create(['origin_iso2' => 'TZ', 'destination_iso2' => 'ZM', 'border_post' => 'Nakonde', 'supported' => true]);
         $this->mwami = TradeRoute::create(['origin_iso2' => 'MW', 'destination_iso2' => 'ZM', 'border_post' => 'Mwami', 'supported' => false]);
+        $this->kasumbalesa = TradeRoute::create(['origin_iso2' => 'ZM', 'destination_iso2' => 'CD', 'border_post' => 'Kasumbalesa', 'supported' => true]);
+        $this->mokambo = TradeRoute::create(['origin_iso2' => 'ZM', 'destination_iso2' => 'CD', 'border_post' => 'Mokambo', 'supported' => false]);
 
         ExchangeRate::create(['currency' => 'USD', 'rate_to_zmw' => '26.5', 'effective_from' => '2026-11-16', 'source' => 'Test rate']);
         ExchangeRate::create(['currency' => 'TZS', 'rate_to_zmw' => '0.0105', 'effective_from' => '2026-11-16', 'source' => 'Test rate']);
@@ -83,6 +104,18 @@ trait TariffFixtures
                 'specific_amount' => '0.50', 'specific_currency' => 'ZMW', 'combine' => 'sum'],
             $vat,
         ]);
+
+        // Export duty on the same lines (export cases E1–E7). The phone charger has no export
+        // duty row on purpose: a missing required charge must be `unsupported`, never zero.
+        $export = ['tax_type' => 'export_duty', 'sequence' => 1, 'base_components' => ['declared_value']];
+        $this->fixtureRule($this->lines['61091000'], $export + ['method' => 'ad_valorem', 'rate' => '0']);
+        $this->fixtureRule($this->lines['10063000'], $export + ['method' => 'specific', 'specific_amount' => '0.20', 'specific_currency' => 'ZMW']);
+        $this->fixtureRule($this->lines['17019900'], $export + ['method' => 'compound', 'rate' => '0.05',
+            'specific_amount' => '0.10', 'specific_currency' => 'ZMW', 'combine' => 'max']);
+        $this->fixtureRule($this->lines['22021000'], ['base_components' => ['declared_value', 'freight']] + $export
+            + ['method' => 'ad_valorem', 'rate' => '0.10']);
+        $this->fixtureRule($this->lines['15079000'], $export + ['method' => 'compound', 'rate' => '0.02',
+            'specific_amount' => '0.05', 'specific_currency' => 'ZMW', 'combine' => 'sum']);
     }
 
     /** @param list<array<string, mixed>> $rules */

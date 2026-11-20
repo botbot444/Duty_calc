@@ -23,6 +23,7 @@ class EstimateEndpointsTest extends TestCase
         parent::setUp();
 
         Carbon::setTestNow(Carbon::parse('2026-11-20 10:00', 'Africa/Lusaka'));
+        $this->chargeImportTaxes();   // HTTP mechanics on the import fixtures; export journey: TextJourneyTest
         $this->seedTariffFixtures();
     }
 
@@ -56,7 +57,8 @@ class EstimateEndpointsTest extends TestCase
         $this->postJson('/api/selection', ['catalogue_item_id' => 'CAT-0003'])
             ->assertOk()
             ->assertJsonPath('selected.hs_code', '10063000')
-            ->assertJsonPath('required_inputs.quantity', ['unit' => 'kg', 'unit_label' => 'kilograms']);
+            ->assertJsonPath('required_inputs.quantity', ['unit' => 'kg', 'unit_label' => 'kilograms'])
+            ->assertJsonPath('optional_inputs', ['freight', 'insurance']);   // import rules use the CIF customs value
 
         $this->postJson('/api/selection', ['catalogue_item_id' => 'CAT-0001'])
             ->assertOk()
@@ -205,12 +207,14 @@ class EstimateEndpointsTest extends TestCase
 
     public function test_routes_lists_only_supported_routes(): void
     {
+        // Fixtures: Nakonde and Kasumbalesa supported; Mwami and Mokambo not.
         $this->getJson('/api/routes')
             ->assertOk()
-            ->assertJsonCount(1, 'routes')
+            ->assertJsonCount(2, 'routes')
             ->assertJsonPath('routes.0.border_post', 'Nakonde')
-            ->assertJsonPath('routes.0.origin', ['iso2' => 'TZ', 'name' => 'Tanzania'])
-            ->assertJsonPath('routes.0.destination', ['iso2' => 'ZM', 'name' => 'Zambia']);
+            ->assertJsonPath('routes.1.border_post', 'Kasumbalesa')
+            ->assertJsonPath('routes.1.origin', ['iso2' => 'ZM', 'name' => 'Zambia'])
+            ->assertJsonPath('routes.1.destination', ['iso2' => 'CD', 'name' => 'DR Congo']);
     }
 
     public function test_currencies_are_zmw_plus_those_with_a_rate_in_force(): void
@@ -256,7 +260,8 @@ class EstimateEndpointsTest extends TestCase
         $this->select('CAT-0001');
         $old = $this->estimate()->json('estimate_id');
         Carbon::setTestNow(Carbon::parse('2027-01-10 10:00', 'Africa/Lusaka'));
-        ExchangeRate::query()->delete();
+        // Rates are never deleted once used (the first estimate copied the USD display rate): end them.
+        ExchangeRate::query()->update(['effective_to' => '2026-12-31']);
         $this->fixtureRule($this->lines['61091000'], ['tax_type' => 'vat', 'sequence' => 3, 'method' => 'ad_valorem',
             'rate' => '0.165', 'base_components' => ['customs_value', 'customs_duty'], 'effective_from' => '2027-01-01']);
         $recent = $this->estimate()->json('estimate_id');

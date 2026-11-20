@@ -1,13 +1,16 @@
 # DutyCalc
 
-DutyCalc estimates the customs duty, excise and VAT a small-scale cross-border trader will pay when bringing goods
-into Zambia, before they reach the border. The first route is Tanzania to Zambia through Nakonde.
+DutyCalc estimates the **Zambian charges (export duty)** a small-scale cross-border trader will pay when taking goods
+out of Zambia into DR Congo, before they reach the border. The first route is Zambia to DR Congo through Kasumbalesa.
+Charges in DR Congo are not included. The total is shown in USD first, with the ZMW amount beside it.
 
 A trader finds a product by typing (in English, Bemba or Swahili) or by taking a photo, confirms it, enters the
 value and quantity, and gets an itemised estimate with the source and date of every rate.
 
 **Status:** hackathon MVP. The backend (phases B0–B8 of [the plan](docs/IMPLEMENTATION_PLAN.md)) is complete and
-tested. The frontend (Blade screens) is not built yet. **All tariff data is SAMPLE data**; see
+tested, and was switched from imports into Zambia to exports to DR Congo in phases X1–X5 of the
+[export plan](docs/EXPORT_PLAN.md). The frontend (Blade screens) is not built yet; the chosen design is direction A on the
+[mockup canvas](https://claude.ai/artifact/Dqv9vQxGvkhzfuHQcP5HPv). **All tariff data is SAMPLE data**; see
 [known issues](docs/HANDOVER.md#known-issues).
 
 > Estimates are not ZRA's official decisions. Verify all regulatory facts with ZRA before launch.
@@ -124,10 +127,12 @@ Values live only in `.env`, which is never committed. `.env.example` lists every
 | `IDENTIFICATION_API_KEY` | Sent as `Authorization: Bearer …`; read only through `config/services.php` |
 | `IDENTIFICATION_MODEL` | Optional; recorded on each analysis |
 | `IDENTIFICATION_TIMEOUT` | Seconds, default 15 (one retry on a connection failure) |
-| `DUTYCALC_MISSING_FREIGHT_INSURANCE` | `zero` (default: blank counts as 0 and is listed as an assumption) or `incomplete` |
+| `DUTYCALC_MISSING_FREIGHT_INSURANCE` | `zero` (default: blank counts as 0 and is listed as an assumption) or `incomplete`. Only applies when a rule's base uses freight or insurance |
+| `DUTYCALC_DISPLAY_CURRENCY` | Second currency results are shown in, default `USD`. Empty shows ZMW only |
 
-Engine settings that are not secrets (engine version, 90-day retention, required charges, disclaimer) are in
-[config/dutycalc.php](config/dutycalc.php).
+Engine settings that are not secrets (engine version, 90-day retention, home country, charged and required tax types,
+disclaimer) are in [config/dutycalc.php](config/dutycalc.php). Since the export pivot only `export_duty` is charged;
+customs duty, excise and VAT rules are ignored even if a tariff line has them.
 
 ## Running the tests
 
@@ -201,9 +206,12 @@ Responses below are real output from the SAMPLE data (sugar: "40% or K5.00 per k
   "selected": { "id": "CAT-0004", "name": "Sugar (white)", "hs_code": "17019900",
                 "official_description": "Cane or beet sugar, other (SAMPLE)", "stat_unit": "kg" },
   "required_inputs": { "quantity": { "unit": "kg", "unit_label": "kilograms" } },
-  "optional_inputs": ["freight", "insurance"]
+  "optional_inputs": []
 }
 ```
+
+`optional_inputs` lists `freight` and/or `insurance` only when a rule's base uses them. Export duty on the value of
+the goods (FOB) needs neither, so the form hides both.
 
 `POST /api/estimates`
 
@@ -213,8 +221,6 @@ Responses below are real output from the SAMPLE data (sugar: "40% or K5.00 per k
   "trade_route_id": 1,
   "declared_value": "10000",
   "currency": "ZMW",
-  "freight": "0",
-  "insurance": "0",
   "quantity": "500"
 }
 ```
@@ -228,44 +234,51 @@ Response (`201 Created`):
   "currency": "ZMW",
   "product": { "id": "CAT-0004", "name": "Sugar (white)", "hs_code": "17019900",
                "official_description": "Cane or beet sugar, other (SAMPLE)", "stat_unit": "kg" },
-  "route": { "id": 1, "origin": "TZ", "origin_name": "Tanzania", "destination": "ZM",
-             "destination_name": "Zambia", "border_post": "Nakonde" },
+  "route": { "id": 1, "origin": "ZM", "origin_name": "Zambia", "destination": "CD",
+             "destination_name": "DR Congo", "border_post": "Kasumbalesa" },
   "valuation": {
-    "basis": "CIF", "input_currency": "ZMW", "exchange_rate": "1.00000000",
+    "basis": "FOB", "value_for_duty_zmw": "10000.00",
+    "input_currency": "ZMW", "exchange_rate": "1.00000000",
     "exchange_rate_date": null, "exchange_rate_source": null,
     "declared_value_zmw": "10000.00", "freight_zmw": "0.00", "insurance_zmw": "0.00",
     "customs_value_zmw": "10000.00", "quantity": "500.0000", "quantity_unit": "kg"
   },
   "line_items": [
     {
-      "tax_type": "customs_duty", "label": "Customs duty", "sequence": 1,
-      "method": "compound", "rate": "0.400000", "specific_amount": "5.0000", "specific_currency": "ZMW",
-      "combine": "max", "quantity": "500.0000", "base_components": ["customs_value"],
-      "taxable_base": "10000.00", "amount": "4000.00", "rule_effective_from": "2026-01-01",
-      "source": { "name": "SAMPLE – not verified, for testing only", "page": 1 }
-    },
-    {
-      "tax_type": "vat", "label": "VAT", "sequence": 3,
-      "method": "ad_valorem", "rate": "0.160000", "specific_amount": null, "specific_currency": null,
-      "combine": null, "quantity": null, "base_components": ["customs_value", "customs_duty"],
-      "taxable_base": "14000.00", "amount": "2240.00", "rule_effective_from": "2026-01-01",
+      "tax_type": "export_duty", "label": "Export duty", "sequence": 1,
+      "method": "compound", "rate": "0.050000", "specific_amount": "0.1000", "specific_currency": "ZMW",
+      "combine": "max", "quantity": "500.0000", "base_components": ["declared_value"],
+      "taxable_base": "10000.00", "amount": "500.00", "amount_display": "18.87",
+      "rule_effective_from": "2026-01-01",
       "source": { "name": "SAMPLE – not verified, for testing only", "page": 1 }
     }
   ],
-  "total_estimated_charges": "6240.00",
+  "total_estimated_charges": "500.00",
+  "display": {
+    "currency": "USD", "exchange_rate": "26.50000000", "exchange_rate_date": "2026-11-16",
+    "exchange_rate_source": "SAMPLE – not verified", "total": "18.87"
+  },
   "tariff_effective_date": "2026-01-01",
-  "calculated_on": "2026-11-19",
+  "calculated_on": "2026-11-20",
   "assumptions": [
     "Values entered in ZMW: no conversion.",
-    "Customs value is CIF: declared value + freight + insurance, converted to ZMW.",
+    "Charged on the value of the goods (FOB), converted to ZMW.",
     "Charged at the standard rate: no trade preference (for example COMESA or SADC) is claimed.",
-    "Each charge is rounded once, to 2 decimals, half up (to be confirmed with ZRA)."
+    "Each charge is rounded once, to 2 decimals, half up (to be confirmed with ZRA).",
+    "Only charges in Zambia are shown. Charges in DR Congo are not included.",
+    "USD amounts are converted from ZMW at USD 1 = ZMW 26.50000000 (SAMPLE – not verified, from 2026-11-16)."
   ],
   "missing": [],
   "disclaimer": "This is an estimate only, not an official ZRA assessment. The amount charged at the border may differ. Check with ZRA or a clearing agent before you travel.",
-  "engine_version": "1.0.0"
+  "engine_version": "2.0.0"
 }
 ```
+
+Money is worked out, rounded and stored in **ZMW** (`total_estimated_charges`, `line_items[].amount`). `display`
+and `amount_display` are the same figures converted to USD at the rate in force, each rounded once; show them
+first. `display` is `null` (and an assumption says so) when no USD rate is in force: show ZMW only, never a
+guessed rate. The rule's `base_components` say what the duty is charged on (`declared_value` = FOB; also
+`freight`, `insurance`, or `customs_value` = all three); `valuation.basis` names the result.
 
 When the estimate cannot be made, the same shape comes back with no line items and the reasons in `missing`:
 
@@ -275,7 +288,7 @@ When the estimate cannot be made, the same shape comes back with no line items a
   "line_items": [],
   "total_estimated_charges": null,
   "missing": [
-    { "item": "quantity", "message": "Enter the quantity in kilograms (kg): the Customs duty is charged per kg." }
+    { "item": "quantity", "message": "Enter the quantity in kilograms (kg): the Export duty is charged per kg." }
   ]
 }
 ```

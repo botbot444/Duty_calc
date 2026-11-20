@@ -8,7 +8,8 @@ use App\Enums\TaxType;
 use App\Models\CalculationBreakdown;
 
 /**
- * One charge in an estimate. Amounts are 2-decimal strings in ZMW.
+ * One charge in an estimate. Amounts are 2-decimal strings in ZMW; amountDisplay is the
+ * same charge in the display currency (USD), or null when no display rate was in force.
  */
 final class LineItem
 {
@@ -25,6 +26,7 @@ final class LineItem
         public readonly array $baseComponents,
         public readonly string $taxableBase,
         public readonly string $amount,
+        public readonly ?string $amountDisplay,
         public readonly int $ruleId,
         public readonly string $ruleEffectiveFrom,
         public readonly ?string $ruleEffectiveTo,
@@ -47,6 +49,7 @@ final class LineItem
             baseComponents: $b->base_components,
             taxableBase: $b->taxable_base_zmw,
             amount: $b->amount_zmw,
+            amountDisplay: $b->amount_display,
             ruleId: $b->tariff_rule_id,
             ruleEffectiveFrom: $b->rule_effective_from->toDateString(),
             ruleEffectiveTo: $b->rule_effective_to?->toDateString(),
@@ -71,6 +74,7 @@ final class LineItem
             'combine' => $this->combine,
             'quantity' => $this->quantity,
             'amount_zmw' => $this->amount,
+            'amount_display' => $this->amountDisplay,
             'tariff_rule_id' => $this->ruleId,
             'rule_effective_from' => $this->ruleEffectiveFrom,
             'rule_effective_to' => $this->ruleEffectiveTo,
@@ -95,6 +99,7 @@ final class LineItem
             'base_components' => $this->baseComponents,
             'taxable_base' => $this->taxableBase,
             'amount' => $this->amount,
+            'amount_display' => $this->amountDisplay,
             'rule_effective_from' => $this->ruleEffectiveFrom,
             'source' => ['name' => $this->sourceName, 'page' => $this->sourcePage],
         ];

@@ -28,6 +28,7 @@ class AdminRateChangesTest extends TestCase
         parent::setUp();
 
         Carbon::setTestNow(Carbon::parse('2026-11-20 10:00', 'Africa/Lusaka'));
+        $this->chargeImportTaxes();   // rate changes are tested on the import fixture rules
         $this->seedTariffFixtures();
         $this->admin = User::factory()->create();
         $this->actingAs($this->admin);

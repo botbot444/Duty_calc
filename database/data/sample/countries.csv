@@ -1,4 +1,3 @@
 iso2,name,is_origin,is_destination
-ZM,Zambia,0,1
-TZ,Tanzania,1,0
-MW,Malawi,1,0
+ZM,Zambia,1,0
+CD,DR Congo,0,1

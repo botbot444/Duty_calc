@@ -7,6 +7,7 @@ use App\Enums\Language;
 use App\Enums\RuleMethod;
 use App\Enums\StatUnit;
 use App\Enums\TaxType;
+use App\Enums\ValueComponent;
 use App\Models\ExchangeRate;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -19,7 +20,8 @@ use Illuminate\Validation\Rule;
  * - every tariff line and rule names an existing source and a page number
  * - HS codes are 8 digits; enum columns hold allowed values only
  * - decimals are plain decimal strings that fit their column (never floats)
- * - base_components lists only customs_value and tax types with a lower sequence
+ * - base_components lists only value components (declared_value, freight, insurance,
+ *   customs_value) and tax types with a lower sequence
  * - date ranges for the same key never overlap, against the database and the file itself
  *
  * Each method takes rows as read by CsvReader and returns a ValidationResult whose
@@ -368,10 +370,14 @@ class TariffDataValidator
                 }
             }
 
-            // base_components: customs_value, or a tax type charged earlier on this line in the same period.
+            // base_components: value components, or a tax type charged earlier on this line in the same period.
             $all = array_merge($existing, $candidates);
+            $values = array_values(array_filter($c['base_components'], fn ($x) => ValueComponent::tryFrom($x) !== null));
+            if (in_array('customs_value', $values, true) && count($values) > 1) {
+                $rowErrors[] = $this->error($file, $c['row'], 'customs_value already includes declared_value, freight and insurance; list one or the other');
+            }
             foreach ($c['base_components'] as $component) {
-                if ($component === 'customs_value') {
+                if (ValueComponent::tryFrom($component) !== null) {
                     continue;
                 }
                 if (TaxType::tryFrom($component) === null) {

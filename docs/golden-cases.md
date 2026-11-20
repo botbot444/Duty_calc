@@ -42,3 +42,36 @@ Conventions used by every case:
 | R1 | T-shirt (61091000)   | ZMW 100.02, freight 0, insurance 0                       | duty 25% = 25.005, half up 25.01 (half even would give 25.00); VAT 16% x 125.03 = 20.0048, rounded 20.00 | 45.01 |
 | L1 | T-shirt, 31 Dec 23:59 Lusaka | as G1                                            | VAT 16% (rule ends 2026-12-31) = 2,120.00                                                   | 4,770.00    |
 | L2 | T-shirt, 1 Jan 00:01 Lusaka  | as G1                                            | VAT 16.5% (rule from 2027-01-01) x 13,250.00 = 2,186.25                                     | 4,836.25    |
+
+Since the export pivot (`docs/EXPORT_PLAN.md`), G1–L2 run with the import charges switched on in config
+(`TariffFixtures::chargeImportTaxes()`). They stay as tests of the rule mechanics (ad valorem, specific, compound,
+charges in a later base, rounding, dates), which export duty uses too.
+
+## Export cases (Zambia → DR Congo via Kasumbalesa)
+
+Worked by hand on 2026-11-20 against the **export test fixture rates** in `tests/Support/TariffFixtures.php`
+(SAMPLE values, not ZRA rates). Each case is a test in `tests/Feature/Estimate/ExportEstimateTest.php`.
+
+| What is checked | Checked by | Against | Date | Status |
+| --- | --- | --- | --- | --- |
+| Arithmetic of E1–E7 | Claude (AI assistant), for the team | Export fixture rates | 2026-11-20 | Done |
+| Method: valuation basis (FOB?), what export duty is charged on, rounding | Clearing agent at Kasumbalesa, or ZRA | ZRA export guidance | – | **Open** (plan Q1) |
+| The same cases on verified export duty rows | Team member + second checker | ZRA export duty source, page per row | – | **Open** (plan Q3) |
+
+Conventions:
+
+- Only `export_duty` is charged. Each rule's base is data: `declared_value` (FOB) unless the case says otherwise.
+- Values entered in USD are converted to ZMW first (USD 1 = ZMW 26.50), rounded to 2 dp.
+- Export duty is worked out and rounded in ZMW (2 dp, half up).
+- USD display: each ZMW amount ÷ 26.50, rounded once to 2 dp, half up. The USD total is the ZMW total ÷ 26.50,
+  rounded once (so with several charges the USD lines may differ from the USD total by a cent).
+
+| #  | Item (HS)                | Inputs                                         | Working (ZMW)                                                       | Duty (ZMW) | USD display |
+| -- | ------------------------ | ---------------------------------------------- | ------------------------------------------------------------------- | ---------- | ----------- |
+| E1 | T-shirt (61091000)       | ZMW 10,000.00                                  | FOB 10,000.00; export duty 0% = 0.00                                | 0.00       | 0.00        |
+| E2 | Sugar (17019900)         | ZMW 10,000.00, 500 kg                          | 5% = 500.00 vs K0.10 x 500 = 50.00, higher = 500.00                 | 500.00     | 500.00 ÷ 26.50 = 18.8679 → 18.87 |
+| E3 | Sugar (17019900)         | ZMW 500.00, 1,000 kg                           | 5% = 25.00 vs K0.10 x 1,000 = 100.00, higher = 100.00               | 100.00     | 3.7736 → 3.77 |
+| E4 | Rice (10063000)          | USD 400, 2,000 kg                              | FOB 400 x 26.50 = 10,600.00; K0.20 x 2,000 = 400.00                 | 400.00     | 15.0943 → 15.09 |
+| E5 | Cooking oil (15079000)   | ZMW 6,000.00, 400 kg                           | 2% = 120.00 plus K0.05 x 400 = 20.00, sum = 140.00                  | 140.00     | 5.2830 → 5.28 |
+| E6 | Soft drink (22021000)    | ZMW 8,000.00, freight 400.00, insurance 100.00 | base = declared value + freight = 8,400.00 (insurance not in base); 10% = 840.00 | 840.00 | 31.6981 → 31.70 |
+| E7 | Sugar (17019900)         | USD 10.01, 1 kg                                | 10.01 x 26.50 = 265.265 → 265.27; 5% = 13.2635 → 13.26 vs K0.10, higher = 13.26 | 13.26 | 0.5004 → 0.50 |

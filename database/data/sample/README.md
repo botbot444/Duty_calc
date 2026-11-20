@@ -5,22 +5,25 @@ before verified rows arrive from the ZRA tariff book. **Do not use these numbers
 
 - Source on every row: "SAMPLE – not verified, for testing only". Page number `1` is a placeholder.
 - HS codes are real-looking 8-digit codes, but descriptions, rates and specific amounts are invented.
-- VAT is seeded at 16% ending 2026-12-31. No 2027 row is included, so from 1 Jan 2027 these lines
-  return `unsupported` until a new VAT row is added (see the plan, section 13).
+- Since the export pivot (`docs/EXPORT_PLAN.md`) the route is Zambia → DR Congo via Kasumbalesa, and the only
+  charge is **export duty** (`export_duty`). Mokambo and Kipushi are listed as not supported, so the
+  `unsupported` route message can be tried.
+- Most lines carry a sourced **0% export duty** row: "no duty" must be a row with a source, never a gap.
+- The 8 products are kept for testing only. The real export product list is still to be agreed (plan, Q2).
 - Bemba and Swahili aliases are placeholders; the language specialist must confirm them.
-- Exchange rates (USD, TZS) are invented. ZMW needs no row.
+- The USD exchange rate is invented. ZMW needs no row.
 
-What the lines cover (plan B2):
+What the lines cover:
 
-| HS code  | Item(s)              | Duty                                 | Other            |
-| -------- | -------------------- | ------------------------------------ | ---------------- |
-| 61091000 | CAT-0001, CAT-0002   | 25% ad valorem                       | VAT              |
-| 10063000 | CAT-0003             | K1.50 per kg (specific)              | VAT              |
-| 17019900 | CAT-0004             | 40% or K5.00 per kg, higher (compound max) | VAT        |
-| 22021000 | CAT-0005             | 25% ad valorem                       | Excise 3%, VAT on CIF + duty + excise |
-| 85044000 | CAT-0006             | 15% ad valorem                       | VAT              |
-| 85287200 | CAT-0007             | 25% ad valorem (alias "tv" tests short words) | VAT     |
-| 15079000 | CAT-0008             | 5% plus K0.50 per kg (compound sum)  | VAT              |
+| HS code  | Item(s)              | Export duty (SAMPLE)                          | Base                     |
+| -------- | -------------------- | --------------------------------------------- | ------------------------ |
+| 61091000 | CAT-0001, CAT-0002   | 0% ad valorem                                 | declared value (FOB)     |
+| 10063000 | CAT-0003             | K0.20 per kg (specific)                       | –                        |
+| 17019900 | CAT-0004             | 5% or K0.10 per kg, higher (compound max)     | declared value (FOB)     |
+| 22021000 | CAT-0005             | 10% ad valorem                                | declared value + freight |
+| 85044000 | CAT-0006             | 0% ad valorem                                 | declared value (FOB)     |
+| 85287200 | CAT-0007             | 0% (alias "tv" tests short words)             | declared value (FOB)     |
+| 15079000 | CAT-0008             | 2% plus K0.05 per kg (compound sum)           | declared value (FOB)     |
 
 ## File format
 
@@ -34,7 +37,8 @@ Blank cells mean null. Booleans: `1/0`, `true/false` or `yes/no`.
 5. `catalogue_items.csv` – id (CAT-0000), hs_code, display_name, active
 6. `product_aliases.csv` – catalogue_item_id, alias, language (en/bem/sw)
 7. `tariff_rules.csv` – hs_code, tax_type, sequence, method, rate, specific_amount, specific_currency, combine,
-   base_components (pipe-separated, e.g. `customs_value|customs_duty`), origin_country, effective_from, effective_to,
+   base_components (pipe-separated: value components `declared_value`, `freight`, `insurance` or `customs_value`
+   (= all three), plus tax types charged earlier, e.g. `declared_value|freight`), origin_country, effective_from, effective_to,
    source_name, source_page
 8. `exchange_rates.csv` – currency, rate_to_zmw, effective_from, effective_to, source
 

@@ -30,6 +30,7 @@ class CalculationBreakdown extends Model
             'specific_amount' => 'decimal:4',
             'quantity' => 'decimal:4',
             'amount_zmw' => 'decimal:2',
+            'amount_display' => 'decimal:2',
             'rule_effective_from' => 'date',
             'rule_effective_to' => 'date',
             'source_page' => 'integer',

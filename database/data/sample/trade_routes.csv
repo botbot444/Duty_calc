@@ -1,3 +1,4 @@
 origin_iso2,destination_iso2,border_post,supported,notes
-TZ,ZM,Nakonde,1,"Primary MVP corridor (SAMPLE, route to be confirmed)"
-MW,ZM,Mwami,0,"Backup corridor, not supported yet"
+ZM,CD,Kasumbalesa,1,"MVP export corridor (SAMPLE, route to be confirmed)"
+ZM,CD,Mokambo,0,"Not supported yet"
+ZM,CD,Kipushi,0,"Not supported yet"

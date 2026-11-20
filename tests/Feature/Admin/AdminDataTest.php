@@ -61,7 +61,7 @@ class AdminDataTest extends TestCase
     {
         $counts = $this->preview($this->sampleFiles())->assertOk()->assertJsonPath('valid', true)->json('counts');
 
-        $this->assertSame(15, $counts['tariff_rules.csv']);   // file names contain dots, so no assertJsonPath
+        $this->assertSame(7, $counts['tariff_rules.csv']);   // file names contain dots, so no assertJsonPath
         $this->assertSame(30, $counts['product_aliases.csv']);
 
         $this->assertSame(0, TariffRule::count());
@@ -75,7 +75,7 @@ class AdminDataTest extends TestCase
         $counts = $this->postJson("/api/admin/imports/{$token}/confirm")->assertOk()->json('counts');
         $this->assertSame(7, $counts['tariff_lines.csv']);
 
-        $this->assertSame(15, TariffRule::count());
+        $this->assertSame(7, TariffRule::count());
         $log = AdminAuditLog::sole();
         $this->assertSame('import', $log->action);
         $this->assertSame($token, $log->record_id);
@@ -101,7 +101,7 @@ class AdminDataTest extends TestCase
             ->assertStatus(422)
             ->assertJsonPath('valid', false)
             ->assertJsonPath('errors.0.file', 'tariff_rules.csv')
-            ->assertJsonPath('errors.0.row', 17);
+            ->assertJsonPath('errors.0.row', 9);
 
         $this->assertSame(0, TariffSource::count());
         $this->assertSame([], Storage::disk('local')->allFiles('admin-imports'));
@@ -183,11 +183,11 @@ class AdminDataTest extends TestCase
         $this->seedTariffFixtures();
 
         $this->postJson("/api/admin/trade-routes/{$this->mwami->id}/toggle", ['supported' => true])->assertOk()->assertJsonPath('route.supported', true);
-        $this->getJson('/api/routes')->assertJsonCount(2, 'routes');
+        $this->getJson('/api/routes')->assertJsonCount(3, 'routes');   // Nakonde, Kasumbalesa + Mwami
 
         $this->postJson("/api/admin/trade-routes/{$this->mwami->id}/toggle", ['supported' => false])->assertOk();
         $this->postJson("/api/admin/trade-routes/{$this->mwami->id}/toggle", [])->assertStatus(422);
-        $this->getJson('/api/routes')->assertJsonCount(1, 'routes');
+        $this->getJson('/api/routes')->assertJsonCount(2, 'routes');
 
         $log = AdminAuditLog::orderBy('id')->first();
         $this->assertSame('toggle', $log->action);

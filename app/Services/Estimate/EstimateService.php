@@ -4,6 +4,7 @@ namespace App\Services\Estimate;
 
 use App\Enums\EstimateStatus;
 use App\Enums\TaxType;
+use App\Enums\ValueComponent;
 use App\Models\Calculation;
 use App\Models\CatalogueItem;
 use App\Models\ExchangeRate;
@@ -20,16 +21,19 @@ use Illuminate\Support\Facades\DB;
  * The calculation engine. The only place charges are worked out: the text and photo
  * routes both end here with a confirmed catalogue item.
  *
- * Steps (plan, section 6):
+ * Steps (plan, section 6; export changes in docs/EXPORT_PLAN.md):
  *  1. item and tariff line, active and valid today            -> else unsupported
  *  2. trade route, known and supported                         -> else unsupported
- *  3. standard-rate rules in force today, ordered by sequence  -> else unsupported
- *  4. inputs the rules need (quantity), freight and insurance  -> else incomplete
+ *  3. standard-rate rules in force today for the charged tax
+ *     types (config dutycalc.charged_tax_types), by sequence   -> else unsupported
+ *  4. inputs the rules need (quantity; freight and insurance
+ *     only if a rule's base uses them)                         -> else incomplete
  *  5. exchange rate in force (ZMW: rate 1)                     -> else unsupported
- *  6. customs value = CIF in ZMW
+ *  6. value components in ZMW (declared value, freight, insurance, customs value = CIF)
  *  7. each rule in sequence: base = sum of its base_components, amount from RuleEvaluator
  *  8. round each charge once (2 dp, half up); total = sum of rounded charges
- *  9. save calculation + breakdowns with every value copied in
+ *  9. display currency (USD): each ZMW figure ÷ the rate in force, rounded once; none if no rate
+ * 10. save calculation + breakdowns with every value copied in
  *
  * Every request is saved, including unsupported and incomplete ones. "Today" is the
  * Africa/Lusaka date from now(), so tests can fix it with Carbon::setTestNow().
@@ -97,21 +101,40 @@ class EstimateService
             return $this->save($run, EstimateStatus::Incomplete);
         }
 
-        // 6. Customs value (CIF) in ZMW, each part rounded once.
+        // 6. Value components in ZMW, each part rounded once. Which ones count is data on the rules.
         $declared = $this->toZmw($request->declaredValue, $rate);
         $freight = $this->toZmw($request->freight ?? '0', $rate);
         $insurance = $this->toZmw($request->insurance ?? '0', $rate);
         $customsValue = $declared->plus($freight)->plus($insurance);
+        $values = [
+            ValueComponent::DeclaredValue->value => $declared,
+            ValueComponent::Freight->value => $freight,
+            ValueComponent::Insurance->value => $insurance,
+            ValueComponent::CustomsValue->value => $customsValue,
+        ];
+
+        $used = $this->valueComponents($rules);
+        $basis = ValueComponent::basis($used);
+        $valueForDuty = in_array(ValueComponent::CustomsValue, $used, true) ? $customsValue
+            : array_reduce($used, fn (BigDecimal $sum, ValueComponent $c) => $sum->plus($values[$c->value]), BigDecimal::zero()->toScale(self::MONEY_SCALE));
 
         $run->attributes += [
             'declared_value_zmw' => (string) $declared,
             'freight_zmw' => (string) $freight,
             'insurance_zmw' => (string) $insurance,
             'customs_value_zmw' => (string) $customsValue,
+            'valuation_basis' => $basis,
+            'value_for_duty_zmw' => (string) $valueForDuty,
         ];
-        $run->assume('Customs value is CIF: declared value + freight + insurance, converted to ZMW.');
+        $run->assume($this->valuationAssumption($used, $basis));
         $run->assume('Charged at the standard rate: no trade preference (for example COMESA or SADC) is claimed.');
         $run->assume('Each charge is rounded once, to 2 decimals, half up (to be confirmed with ZRA).');
+        if ($route->origin_iso2 === config('dutycalc.home_country')) {
+            $run->assume("Only charges in {$route->origin->name} are shown. Charges in {$route->destination->name} are not included.");
+        }
+
+        // 9 (looked up first, so each line can carry its display amount).
+        $display = $this->displayRate($run, $now);
 
         // 7–8. Each rule in sequence; bases and order come from the data.
         $charged = [];   // tax type => rounded amount
@@ -120,7 +143,7 @@ class EstimateService
         foreach ($rules as $rule) {
             $base = BigDecimal::zero()->toScale(self::MONEY_SCALE);
             foreach ($rule->base_components as $component) {
-                $base = $base->plus($component === 'customs_value' ? $customsValue : $charged[$component]);
+                $base = $base->plus($values[$component] ?? $charged[$component]);
             }
 
             $usesQuantity = $rule->needsQuantity();
@@ -143,6 +166,7 @@ class EstimateService
                 baseComponents: $rule->base_components,
                 taxableBase: (string) $base,
                 amount: (string) $amount,
+                amountDisplay: $display === null ? null : (string) $this->fromZmw($amount, $display),
                 ruleId: $rule->id,
                 ruleEffectiveFrom: $rule->effective_from->toDateString(),
                 ruleEffectiveTo: $rule->effective_to?->toDateString(),
@@ -153,9 +177,12 @@ class EstimateService
         }
 
         $run->attributes['total_zmw'] = (string) $total;
+        if ($display !== null) {
+            $run->attributes['total_display'] = (string) $this->fromZmw($total, $display);
+        }
         $run->attributes['tariff_effective_date'] = $rules->max(fn (TariffRule $r) => $r->effective_from->toDateString());
 
-        // 9. Save.
+        // 10. Save.
         return $this->save($run, EstimateStatus::Estimated);
     }
 
@@ -181,6 +208,19 @@ class EstimateService
         return $needsQuantity ? ['quantity' => $line->stat_unit->value] : [];
     }
 
+    /**
+     * Freight and insurance, but only when a rule in force uses them in its base. Optional:
+     * a blank one counts as zero or makes the estimate incomplete (dutycalc.missing_freight_insurance).
+     *
+     * @return list<string> e.g. ['freight']
+     */
+    public function optionalInputs(CatalogueItem $item): array
+    {
+        $rules = $this->rulesInForce($item->tariffLine, CarbonImmutable::now(config('app.timezone')));
+
+        return $this->inputsUsed($rules);
+    }
+
     // ---------------------------------------------------------------------
 
     /** @return Collection<int, TariffRule> */
@@ -188,6 +228,7 @@ class EstimateService
     {
         return TariffRule::with('source')
             ->where('tariff_line_id', $line->id)
+            ->whereIn('tax_type', config('dutycalc.charged_tax_types', []))
             ->forOrigin(null)            // trade preferences are out of scope
             ->inForce($now)
             ->orderBy('sequence')
@@ -195,21 +236,46 @@ class EstimateService
             ->get();
     }
 
+    /**
+     * Value components the rules' bases use, in a fixed order.
+     *
+     * @return list<ValueComponent>
+     */
+    private function valueComponents(Collection $rules): array
+    {
+        $listed = $rules->flatMap(fn (TariffRule $r) => $r->base_components)->unique()->all();
+
+        return array_values(array_filter(ValueComponent::cases(), fn (ValueComponent $c) => in_array($c->value, $listed, true)));
+    }
+
+    /** @return list<string> freight / insurance, in that order */
+    private function inputsUsed(Collection $rules): array
+    {
+        $inputs = array_merge(...array_map(fn (ValueComponent $c) => $c->inputs(), $this->valueComponents($rules)) ?: [[]]);
+
+        return array_values(array_intersect(['freight', 'insurance'], $inputs));
+    }
+
+    /** @param list<ValueComponent> $used */
+    private function valuationAssumption(array $used, string $basis): string
+    {
+        return match ($basis) {
+            'CIF' => 'Customs value is CIF: declared value + freight + insurance, converted to ZMW.',
+            'FOB' => 'Charged on the value of the goods (FOB), converted to ZMW.',
+            default => 'Charged on the '.implode(' + ', array_map(fn (ValueComponent $c) => $c->label(), $used)).', converted to ZMW.',
+        };
+    }
+
     /** Step 3: refuse to estimate on incomplete or inconsistent tariff data. */
     private function checkRules(EstimateRun $run, CatalogueItem $item, TariffLine $line, Collection $rules, string $today): void
     {
         $hs = $line->hs_code;
 
-        if ($rules->isEmpty()) {
-            $run->unsupported('tariff_rule', "No tax rates are in force for {$item->display_name} (HS {$hs}) on {$today}.");
-
-            return;
-        }
-
         $byType = $rules->groupBy(fn (TariffRule $r) => $r->tax_type->value);
+        $reasons = count($run->problems);
         $required = config('dutycalc.required_tax_types', []);
 
-        foreach (TaxType::cases() as $type) {
+        foreach (TaxType::charged() as $type) {
             $count = count($byType->get($type->value, []));
             if ($count > 1) {
                 $run->unsupported('tariff_rule', "More than one {$type->label()} rate is in force for HS {$hs}; the tariff data needs fixing.");
@@ -225,9 +291,18 @@ class EstimateService
 
             if ($ended !== null) {
                 $run->unsupported('tariff_rule', "The {$type->label()} rate ended on {$ended} and no new rate is in force for HS {$hs}.");
-            } elseif (in_array($type->value, $required, true)) {
+            } elseif ($rules->isNotEmpty() && in_array($type->value, $required, true)) {
                 $run->unsupported('tariff_rule', "No {$type->label()} rule in force for HS {$hs} on {$today}.");
             }
+        }
+
+        if ($rules->isEmpty()) {
+            // Name an ended rate if there is one; otherwise say plainly that nothing is in force.
+            if (count($run->problems) === $reasons) {
+                $run->unsupported('tariff_rule', "No tax rates are in force for {$item->display_name} (HS {$hs}) on {$today}.");
+            }
+
+            return;
         }
 
         $earlier = [];   // tax types charged before the current rule
@@ -237,7 +312,7 @@ class EstimateService
             }
 
             foreach ($rule->base_components as $component) {
-                if ($component === 'customs_value' || in_array($component, $earlier, true)) {
+                if (ValueComponent::tryFrom($component) !== null || in_array($component, $earlier, true)) {
                     continue;
                 }
                 $needed = TaxType::tryFrom($component)?->label() ?? $component;
@@ -263,7 +338,8 @@ class EstimateService
             }
         }
 
-        foreach (['freight' => 'Freight', 'insurance' => 'Insurance'] as $field => $label) {
+        foreach ($this->inputsUsed($rules) as $field) {
+            $label = ucfirst($field);
             if ($request->{$field} !== null) {
                 continue;
             }
@@ -310,6 +386,42 @@ class EstimateService
     private function toZmw(string $amount, BigDecimal $rate): BigDecimal
     {
         return BigDecimal::of($amount)->multipliedBy($rate)->toScale(self::MONEY_SCALE, RoundingMode::HALF_UP);
+    }
+
+    /**
+     * Step 9. The rate (ZMW per unit) for the display currency, copied into the run; null
+     * when display is off or no rate is in force. Never a default rate.
+     */
+    private function displayRate(EstimateRun $run, CarbonImmutable $now): ?BigDecimal
+    {
+        $currency = config('dutycalc.display_currency');
+        if ($currency === null || $currency === '' || $currency === ExchangeRate::BASE_CURRENCY) {
+            return null;
+        }
+
+        $fx = ExchangeRate::where('currency', $currency)->inForce($now)->orderByDesc('effective_from')->first();
+        if ($fx === null) {
+            $run->assume("No {$currency} rate is in force today: amounts are shown in ZMW only.");
+
+            return null;
+        }
+
+        $run->attributes += [
+            'display_currency' => $currency,
+            'display_rate_id' => $fx->id,
+            'display_rate_value' => $fx->rate_to_zmw,
+            'display_rate_effective_from' => $fx->effective_from->toDateString(),
+            'display_rate_source' => $fx->source,
+        ];
+        $run->assume("{$currency} amounts are converted from ZMW at {$currency} 1 = ZMW {$fx->rate_to_zmw} ({$fx->source}, from {$fx->effective_from->toDateString()}).");
+
+        return BigDecimal::of($fx->rate_to_zmw);
+    }
+
+    /** A rounded ZMW amount in the display currency, rounded once (2 dp, half up). */
+    private function fromZmw(BigDecimal $zmw, BigDecimal $rate): BigDecimal
+    {
+        return $zmw->dividedBy($rate, self::MONEY_SCALE, RoundingMode::HALF_UP);
     }
 
     private function save(EstimateRun $run, EstimateStatus $status): EstimateResult
