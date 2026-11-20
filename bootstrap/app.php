@@ -15,9 +15,8 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->web(append: [SetLocale::class]);
 
-        // Admin JSON endpoints answer guests with 401 instead of redirecting to a login page.
-        // (The Blade admin pages in the frontend phase will set a real login URL here.)
-        $middleware->redirectGuestsTo(fn (Request $request) => $request->is('api/*') ? null : '/');
+        // Admin JSON endpoints answer guests with 401; the admin pages send them to the sign-in page.
+        $middleware->redirectGuestsTo(fn (Request $request) => $request->is('api/*') ? null : '/admin/login');
     })
     ->withExceptions(function (Exceptions $exceptions) {
         // JSON endpoints live in routes/web.php under /api/ (for session + CSRF), so tell

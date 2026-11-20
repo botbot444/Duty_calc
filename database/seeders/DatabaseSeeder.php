@@ -7,11 +7,12 @@ use Illuminate\Database\Seeder;
 class DatabaseSeeder extends Seeder
 {
     /**
-     * Seed the application's database. Admin users are created with
-     * `php artisan make:admin` (phase B7), not here.
+     * Seed the application's database: the SAMPLE tariff data, and the admin account
+     * (AdminUserSeeder; not in production).
      */
     public function run(): void
     {
         $this->call(SampleTariffSeeder::class);
+        $this->call(AdminUserSeeder::class);
     }
 }

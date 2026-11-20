@@ -69,8 +69,9 @@ Most urgent first.
    to the language specialist. French is not planned.
 9. **Messages are saved in English.** Showing them in Bemba or Swahili needs message keys with parameters, a small
    engine change to make with the frontend.
-10. **Admin pages are not built.** The trader screens are done; admin functions are JSON endpoints only. The trader
-    screens were checked in a desktop browser at phone size, not yet on a real Android or iPhone on a slow connection.
+10. **Screens not yet tried on real devices.** The trader screens and the admin portal (`/admin`) are built and were
+    checked in a desktop browser (trader screens at phone size), not yet on a real Android or iPhone on a slow
+    connection. The admin CSV import was tested through its endpoints, not by uploading files in a browser.
 11. **Only the admin login is rate-limited.** Add a limit to the public identify endpoints once AI usage limits are known.
 12. **XAMPP's MariaDB 10.4 is end-of-life.** Hosting should use MySQL 8 or a supported MariaDB. CI tests both.
 

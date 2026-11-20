@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\AddRuleRequest;
 use App\Http\Requests\Admin\EndRuleRequest;
 use App\Http\Requests\Admin\ReplaceRuleRequest;
 use App\Models\TariffLine;
@@ -69,6 +70,14 @@ class TariffRuleController extends Controller
     public function end(EndRuleRequest $request, TariffRule $rule): JsonResponse
     {
         return response()->json(['ended' => $this->rule($this->rates->endRule($rule, $request->validated('effective_to'))->fresh())]);
+    }
+
+    /** POST /api/admin/tariff-lines/{line}/rules – "Add a rate" where no rule of that charge is in force. */
+    public function store(AddRuleRequest $request, TariffLine $line): JsonResponse
+    {
+        $rule = $this->rates->addRule($line, $request->validated());
+
+        return response()->json(['created' => $this->rule($rule->fresh())], 201);
     }
 
     private function rule(TariffRule $r): array

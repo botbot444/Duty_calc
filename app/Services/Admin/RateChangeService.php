@@ -3,6 +3,7 @@
 namespace App\Services\Admin;
 
 use App\Models\ExchangeRate;
+use App\Models\TariffLine;
 use App\Models\TariffRule;
 use App\Models\TariffSource;
 use App\Services\TariffData\RowError;
@@ -38,7 +39,7 @@ class RateChangeService
             $this->fail('effective_from', "The new rate must start after the current one ({$old->effective_from->toDateString()}).");
         }
         if ($old->effective_to !== null && $from > $old->effective_to->addDay()->toDateString()) {
-            $this->fail('effective_from', "The current rate already ends on {$old->effective_to->toDateString()}; add the new rate through the CSV import.");
+            $this->fail('effective_from', "The current rate already ends on {$old->effective_to->toDateString()}; use “Add a rate” on the tariff line for the new one.");
         }
 
         return $this->audit->change(function (AuditLog $audit) use ($old, $input, $from) {
@@ -74,6 +75,45 @@ class RateChangeService
             $audit->record('replace', $new, ['replaces_rule_id' => $old->id], AuditLog::snapshot($new));
 
             return $new;
+        });
+    }
+
+    /**
+     * Add a rule to a line for a period with no rule of that charge (a new line, or after a
+     * rate ended). Same checks as the CSV import: source and page required, no overlap with
+     * another rule of the same charge, base components that exist. A "no duty" fact is a 0% rule.
+     */
+    public function addRule(TariffLine $line, array $input): TariffRule
+    {
+        $source = TariffSource::findOrFail($input['tariff_source_id']);
+
+        return $this->audit->change(function (AuditLog $audit) use ($line, $input, $source) {
+            $row = [
+                'hs_code' => $line->hs_code,
+                'tax_type' => $input['tax_type'],
+                'sequence' => (string) ($input['sequence'] ?? 1),
+                'method' => $input['method'],
+                'rate' => $input['rate'] ?? null,
+                'specific_amount' => $input['specific_amount'] ?? null,
+                'specific_currency' => $input['specific_currency'] ?? null,
+                'combine' => $input['combine'] ?? null,
+                'base_components' => implode('|', $input['base_components']),
+                'origin_country' => null,
+                'effective_from' => CarbonImmutable::parse($input['effective_from'])->toDateString(),
+                'effective_to' => $input['effective_to'] ?? null,
+                'source_name' => $source->name,
+                'source_page' => (string) $input['source_page'],
+            ];
+
+            $record = $this->passOrFail($this->validator->tariffRules([['row' => 1, 'data' => $this->strings($row)]], 'admin'))[0];
+            // The validator finds the line by HS code and start date; it must be this line.
+            if ($record['tariff_line_id'] !== $line->id) {
+                $this->fail('effective_from', "The rate must start while this tariff line is valid (from {$line->valid_from->toDateString()}).");
+            }
+            $rule = TariffRule::create($record);
+            $audit->record('create', $rule, null, AuditLog::snapshot($rule));
+
+            return $rule;
         });
     }
 

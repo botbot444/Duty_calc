@@ -194,6 +194,50 @@ class AdminRateChangesTest extends TestCase
 
     // --- exchange rates ----------------------------------------------------
 
+    // --- add a rate -------------------------------------------------------------
+
+    private function addRate(string $hs, array $input = [])
+    {
+        return $this->postJson("/api/admin/tariff-lines/{$this->lines[$hs]->id}/rules", $input + [
+            'tax_type' => 'export_duty', 'method' => 'ad_valorem', 'rate' => '0', 'base_components' => ['declared_value'],
+            'effective_from' => '2026-11-21', 'tariff_source_id' => $this->fixtureSource->id, 'source_page' => 310,
+        ]);
+    }
+
+    public function test_a_rate_can_be_added_to_a_line_that_has_none(): void
+    {
+        // The phone charger fixture has no export duty row: "no duty" is recorded as a sourced 0% rule.
+        $this->addRate('85044000')
+            ->assertCreated()
+            ->assertJsonPath('created.tax_type', 'export_duty')
+            ->assertJsonPath('created.rate', '0.000000')
+            ->assertJsonPath('created.source.page', 310);
+
+        $this->assertSame(1, TariffRule::where('tariff_line_id', $this->lines['85044000']->id)->where('tax_type', 'export_duty')->count());
+        $this->assertSame(['create'], AdminAuditLog::pluck('action')->all());
+    }
+
+    public function test_adding_a_rate_that_overlaps_one_in_force_is_refused(): void
+    {
+        $this->addRate('17019900')->assertStatus(422)->assertJsonValidationErrors('row');
+        $this->assertSame(0, AdminAuditLog::count());
+    }
+
+    public function test_an_added_rate_must_cite_its_page(): void
+    {
+        $this->addRate('85044000', ['source_page' => null])->assertStatus(422)->assertJsonValidationErrors('source_page');
+    }
+
+    public function test_after_a_rate_ends_a_new_one_is_added_rather_than_replaced(): void
+    {
+        $sugar = $this->ruleFor('17019900', 'export_duty');
+        $this->postJson("/api/admin/tariff-rules/{$sugar->id}/end", ['effective_to' => '2026-11-30'])->assertOk();
+
+        $this->replace($sugar, ['effective_from' => '2026-12-15'])
+            ->assertStatus(422)->assertJsonValidationErrors('effective_from');
+        $this->addRate('17019900', ['effective_from' => '2026-12-15', 'rate' => '0.06'])->assertCreated();
+    }
+
     public function test_saving_an_exchange_rate_ends_the_previous_one(): void
     {
         $old = ExchangeRate::where('currency', 'USD')->sole();

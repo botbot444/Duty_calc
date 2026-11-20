@@ -382,7 +382,7 @@ If Days 9–10 overrun, the change log and the route toggle slip to Day 11; exch
 Notes from B7:
 
 - Admin endpoints are JSON under `/api/admin/*` (session login, CSRF, 401 for guests). The Blade admin pages in the frontend phase will sit at `/admin` and call the same services.
-- Every user is an admin. Traders have no accounts. Create an admin with `php artisan make:admin you@example.com`; it asks for the password (at least 12 characters), so it never lands in shell history. Login is limited to 5 tries a minute.
+- Every user is an admin. Traders have no accounts. The admin account is in `AdminUserSeeder` (email and password in the code; re-seeding sets the password to the one written there; not run in production). `php artisan make:admin you@example.com` adds more and asks for the password, so it never lands in shell history; use it for the live admin. Login is limited to 5 tries a minute.
 - No route edits a rate. "Replace" ends the old rule the day before the new one starts. "End" can only move an end date earlier. Both run the new row through `TariffDataValidator`, in one transaction with the audit row.
 - A replacement keeps the old rule's method, base and amounts unless new ones are given, but it must cite its own source and page. A changed method does not inherit the old method's fields.
 - Catalogue items are switched off, never deleted, because saved estimates point to them. A source still in use returns 409 on delete.

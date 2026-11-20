@@ -56,6 +56,7 @@ Route::prefix('api')->name('api.')->group(function () {
 
             Route::get('tariff-lines', [Admin\TariffRuleController::class, 'lines'])->name('lines.index');
             Route::get('tariff-lines/{line}', [Admin\TariffRuleController::class, 'line'])->name('lines.show');
+            Route::post('tariff-lines/{line}/rules', [Admin\TariffRuleController::class, 'store'])->name('rules.store');
             Route::post('tariff-rules/{rule}/replace', [Admin\TariffRuleController::class, 'replace'])->name('rules.replace');
             Route::post('tariff-rules/{rule}/end', [Admin\TariffRuleController::class, 'end'])->name('rules.end');
 
@@ -70,6 +71,26 @@ Route::prefix('api')->name('api.')->group(function () {
 
             Route::get('audit-logs', [Admin\AuditLogController::class, 'index'])->name('audit.index');
         });
+    });
+});
+
+/*
+ * Admin portal pages (English only). They only read; every change is a call from
+ * public/js/admin.js to the /api/admin endpoints above, so validation and the change log
+ * are shared. Guests are sent to admin/login (bootstrap/app.php).
+ */
+Route::prefix('admin')->name('admin.')->group(function () {
+    Route::get('login', [Admin\AdminPageController::class, 'login'])->name('login');
+
+    Route::middleware('auth')->group(function () {
+        Route::redirect('/', '/admin/lines');
+        Route::get('lines', [Admin\AdminPageController::class, 'lines'])->name('lines');
+        Route::get('lines/{line}', [Admin\AdminPageController::class, 'line'])->name('line');
+        Route::get('import', [Admin\AdminPageController::class, 'import'])->name('import');
+        Route::get('rates', [Admin\AdminPageController::class, 'rates'])->name('rates');
+        Route::get('catalogue', [Admin\AdminPageController::class, 'catalogue'])->name('catalogue');
+        Route::get('reference', [Admin\AdminPageController::class, 'reference'])->name('reference');
+        Route::get('log', [Admin\AdminPageController::class, 'log'])->name('log');
     });
 });
 

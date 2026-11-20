@@ -2,6 +2,9 @@
 
 namespace App\Support;
 
+use App\Enums\TaxType;
+use App\Enums\ValueComponent;
+use App\Models\TariffRule;
 use Brick\Math\BigDecimal;
 use Carbon\CarbonImmutable;
 
@@ -68,6 +71,30 @@ final class Display
     public static function date(?string $date): string
     {
         return $date === null ? '–' : CarbonImmutable::parse($date)->translatedFormat('j M Y');
+    }
+
+    /** A rule model's rate in words, e.g. "5% or K0.10 per kg, whichever is higher". */
+    public static function ruleOf(TariffRule $rule): string
+    {
+        return self::rule([
+            'method' => $rule->method->value,
+            'rate' => $rule->rate,
+            'specific_amount' => $rule->specific_amount,
+            'specific_currency' => $rule->specific_currency,
+            'combine' => $rule->combine?->value,
+        ], $rule->tariffLine?->stat_unit->value);
+    }
+
+    /** What a rule is charged on, in words: "Value of the goods (FOB)", "Value of the goods + freight". */
+    public static function base(array $components): string
+    {
+        if ($components === ['declared_value']) {
+            return 'Value of the goods (FOB)';
+        }
+
+        return ucfirst(implode(' + ', array_map(function (string $c) {
+            return ValueComponent::tryFrom($c)?->label() ?? TaxType::tryFrom($c)?->label() ?? $c;
+        }, $components)));
     }
 
     /**

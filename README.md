@@ -99,7 +99,7 @@ Requirements: XAMPP with **PHP 8.2** (8.2.12 is the reference version), its **Ma
    C:/xampp/mysql/bin/mysql.exe -uroot -e "CREATE DATABASE duty_calc CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; CREATE DATABASE dutycalc_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
    ```
 
-4. Create the tables and load the SAMPLE data:
+4. Create the tables, load the SAMPLE data and seed the admin:
 
    ```bash
    php artisan migrate --seed
@@ -108,13 +108,12 @@ Requirements: XAMPP with **PHP 8.2** (8.2.12 is the reference version), its **Ma
    To start again from empty: `php artisan migrate:fresh --seed`. The importer only ever adds rows, so it refuses
    to load the same data twice.
 
-5. Create an admin (asks for a password of at least 12 characters):
+   The admin's email and password are in [AdminUserSeeder.php](database/seeders/AdminUserSeeder.php). To change the
+   password, edit it there and run `php artisan db:seed --class=AdminUserSeeder`. Because that password is in the
+   repository, the seeder does not run when `APP_ENV=production`; create the live admin with
+   `php artisan make:admin you@example.com` (it asks for the password).
 
-   ```bash
-   php artisan make:admin you@example.com --name="Your Name"
-   ```
-
-6. Run the app:
+5. Run the app:
 
    ```bash
    php artisan serve
@@ -342,9 +341,28 @@ name). The trader then confirms with `POST /api/selection`, passing `ai_product_
 
 The contract with the AI service is in [section 8 of the plan](docs/IMPLEMENTATION_PLAN.md#8-core-3--ai-service-contract-and-photo-route).
 
+## Admin portal
+
+Sign in at `/admin` (English only) with the account in `AdminUserSeeder` (not seeded in production); more admins can
+be added with `php artisan make:admin`. There is no sign-up.
+The pages (`resources/views/admin`, `public/js/admin.js`, `public/css/admin.css`) only read; every change is sent to the
+JSON endpoints below, so the pages share their validation, the rate rules and the change log.
+
+| Page | What it is for |
+| --- | --- |
+| `/admin/lines` | Tariff lines with the rate in force; search by HS code or description; filter lines with no rate in force |
+| `/admin/lines/{id}` | A line's rate history; **Replace this rate**, **End this rate**, **Add a rate** (for a line with none, or after an end date) |
+| `/admin/import` | CSV import: check (saves nothing) → import |
+| `/admin/rates` | Exchange rates; add this week's USD rate |
+| `/admin/catalogue` | Products, search words per language, rename, show or hide, add a product |
+| `/admin/reference` | Switch border posts on or off; add, edit and delete tariff sources, and record who checked them |
+| `/admin/log` | The change log, by type of change and date |
+
+A banner on every page lists any source in use that nobody has recorded as checked.
+
 ## Admin endpoints
 
-Session login for admins created with `php artisan make:admin`. Every route below needs a logged-in admin.
+Session login for admins (seeded by `AdminUserSeeder`, or added with `php artisan make:admin`). Every route below needs a logged-in admin.
 There is no route that edits a rate in place, and every save writes an `admin_audit_logs` row.
 
 | Method | Path | Does |
@@ -359,6 +377,7 @@ There is no route that edits a rate in place, and every save writes an `admin_au
 | POST | `/api/admin/imports/{token}/confirm` | Import the previewed files (token works once) |
 | GET | `/api/admin/tariff-lines?hs=` | Lines with their rules, dates and sources |
 | GET | `/api/admin/tariff-lines/{id}` | One line |
+| POST | `/api/admin/tariff-lines/{id}/rules` | **Add a rate** where none of that charge is in force: `{tax_type, method, rate?, specific_amount?, specific_currency?, combine?, base_components[], effective_from, tariff_source_id, source_page}` |
 | POST | `/api/admin/tariff-rules/{id}/replace` | **Replace this rate**: `{effective_from, rate?, specific_amount?, …, tariff_source_id, source_page}` |
 | POST | `/api/admin/tariff-rules/{id}/end` | `{effective_to}`: end a rate (an end date can only move earlier) |
 | GET / POST | `/api/admin/catalogue-items` | List / create an item |

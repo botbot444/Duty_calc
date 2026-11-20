@@ -2,8 +2,9 @@
 
 DutyCalc estimates the **Zambian export duty** for small-scale cross-border traders taking goods from Zambia into
 DR Congo (Kasumbalesa), before they reach the border. DR Congo charges are not included. Results show USD first, ZMW beside.
-Hackathon MVP. Backend and trader screens done (design direction A, https://claude.ai/artifact/Dqv9vQxGvkhzfuHQcP5HPv);
-admin pages still JSON only. Frontend: Blade + plain JS/CSS in `public/`, no Vite build.
+Hackathon MVP. Backend, trader screens and admin portal done (design direction A and the "Admin portal" page,
+https://claude.ai/artifact/Dqv9vQxGvkhzfuHQcP5HPv). Frontend: Blade + plain JS/CSS in `public/`, no Vite build.
+Admin pages only read; changes go through `/api/admin/*` from `public/js/admin.js`.
 
 The full plan is in `docs/IMPLEMENTATION_PLAN.md` (phases B0–B8, written for imports into Zambia). The export pivot
 in `docs/EXPORT_PLAN.md` overrides it where they differ. Read both before starting a task.
