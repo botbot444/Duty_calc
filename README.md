@@ -9,9 +9,21 @@ value and quantity, and gets an itemised estimate with the source and date of ev
 
 **Status:** hackathon MVP. The backend (phases B0–B8 of [the plan](docs/IMPLEMENTATION_PLAN.md)) is complete and
 tested, and was switched from imports into Zambia to exports to DR Congo in phases X1–X5 of the
-[export plan](docs/EXPORT_PLAN.md). The frontend (Blade screens) is not built yet; the chosen design is direction A on the
-[mockup canvas](https://claude.ai/artifact/Dqv9vQxGvkhzfuHQcP5HPv). **All tariff data is SAMPLE data**; see
-[known issues](docs/HANDOVER.md#known-issues).
+[export plan](docs/EXPORT_PLAN.md). The trader screens are built (Blade + plain JavaScript, no build step) in design
+direction A from the [mockup canvas](https://claude.ai/artifact/Dqv9vQxGvkhzfuHQcP5HPv); admin pages are still JSON only.
+**All tariff data is SAMPLE data**; see [known issues](docs/HANDOVER.md#known-issues).
+
+### Trader screens
+
+| URL | What it is |
+| --- | --- |
+| `/` | Search → suggestions (→ clarifying question) → confirm → trade details, in one page (`resources/views/trader.blade.php`, `public/js/dutycalc.js`). The screen is in the URL hash; the trader's place is kept in `sessionStorage` for the tab |
+| `/estimates/{id}` | The result page (`resources/views/estimate.blade.php`): USD first, ZMW beside it, workings, assumptions. Printable, and the link works for 90 days. A JSON request to the same URL gets JSON |
+| `/language/{en,bem,sw}` | Switches the language for the session (screens and API validation messages) |
+
+Styles are in `public/css/dutycalc.css`. Every screen string goes through `__()`; translations go in `lang/bem.json` and
+`lang/sw.json` (empty until the language specialist returns them, so English shows). Photos are redrawn in the browser
+as a JPEG of at most 1600 px before upload.
 
 > Estimates are not ZRA's official decisions. Verify all regulatory facts with ZRA before launch.
 

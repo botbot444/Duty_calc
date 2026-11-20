@@ -16,7 +16,7 @@ but switched off in `config/dutycalc.php`.
 | README: setup, required `.env` keys (no values), endpoint list with request/response examples | Done ([README](../README.md)), updated for exports |
 | Supported products and routes list, known issues, engine limitations | Done (this file) |
 | Golden test cases with who checked them and against which source | Export cases E1–E7 checked by hand; method sign-off by a clearing agent or ZRA still open ([golden-cases.md](golden-cases.md)) |
-| Demo steps and demo data | Steps below. Demo data = the SAMPLE seed. Needs the frontend for a live demo |
+| Demo steps and demo data | Steps below. Demo data = the SAMPLE seed. Runs live at `/` (`php artisan serve`) |
 | CI on every push (PHP 8.2, MariaDB 10.4 and MySQL 8) | Workflow in [tests.yml](../.github/workflows/tests.yml) |
 | Design for the trader screens | Direction A chosen, with error and empty states ([mockup canvas](https://claude.ai/artifact/Dqv9vQxGvkhzfuHQcP5HPv)) |
 
@@ -69,7 +69,8 @@ Most urgent first.
    to the language specialist. French is not planned.
 9. **Messages are saved in English.** Showing them in Bemba or Swahili needs message keys with parameters, a small
    engine change to make with the frontend.
-10. **No frontend yet.** Admin functions are JSON endpoints only.
+10. **Admin pages are not built.** The trader screens are done; admin functions are JSON endpoints only. The trader
+    screens were checked in a desktop browser at phone size, not yet on a real Android or iPhone on a slow connection.
 11. **Only the admin login is rate-limited.** Add a limit to the public identify endpoints once AI usage limits are known.
 12. **XAMPP's MariaDB 10.4 is end-of-life.** Hosting should use MySQL 8 or a supported MariaDB. CI tests both.
 
@@ -97,8 +98,8 @@ the old import sample needs a fresh start (`php artisan migrate:fresh --seed`, w
 
 ## Demo script
 
-Uses the SAMPLE seed. Steps 1, 3 and 4 work with the fake AI client; step 2 needs the real identification service.
-Until the frontend exists, the same journey runs as the feature tests `TextJourneyTest` and `PhotoJourneyTest`.
+Uses the SAMPLE seed, in a browser at `/`. Steps 1, 3 and 4 work with the fake AI client; step 2 needs the real
+identification service. The same journey also runs as the feature tests `TextJourneyTest` and `PhotoJourneyTest`.
 
 1. **Text, in Swahili.** Search "sukari" → choose Sugar (white) → Zambia → DR Congo via Kasumbalesa, value
    ZMW 10,000, quantity 500 kg. No freight or insurance is asked for.

@@ -167,6 +167,11 @@ Send these to the language specialist as a short change list (English source sho
 | C5 | – | Only Zambian charges are shown. Charges in DR Congo are not included. |
 | C5 | – | No USD rate is in force today: amounts are shown in ZMW only. |
 | Part A | Product names | Redo once the export product list (Q2) is fixed |
+| D6 | – | Going from: :country |
+| D7 | – | via (as in "Zambia → DR Congo via Kasumbalesa") |
+| D7 | – | Value for duty (FOB) |
+| D7 | – | Value for duty |
+| D7 | – | Freight |
 
 ## 7. Out of scope (unchanged, plus)
 

@@ -6,11 +6,14 @@ use App\Http\Controllers\EstimateController;
 use App\Http\Controllers\IdentificationController;
 use App\Http\Controllers\ReferenceDataController;
 use App\Http\Controllers\SelectionController;
+use App\Http\Controllers\TraderController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+// Trader screens (frontend). The result page is estimates/{estimate} at the end of this file.
+Route::get('/', [TraderController::class, 'index'])->name('home');
+Route::get('language/{locale}', [TraderController::class, 'language'])
+    ->whereIn('locale', ['en', 'bem', 'sw'])
+    ->name('language');
 
 /*
  * JSON endpoints. They live here, not in routes/api.php, because the confirmation step
@@ -70,7 +73,7 @@ Route::prefix('api')->name('api.')->group(function () {
     });
 });
 
-// A saved estimate. JSON for now; the Blade result page replaces it in the frontend phase.
+// A saved estimate: the Blade result page in a browser, JSON for a JSON request.
 Route::get('estimates/{estimate}', [EstimateController::class, 'show'])
     ->whereUuid('estimate')
     ->name('estimates.show');

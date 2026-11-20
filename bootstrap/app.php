@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\SetLocale;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -12,6 +13,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        $middleware->web(append: [SetLocale::class]);
+
         // Admin JSON endpoints answer guests with 401 instead of redirecting to a login page.
         // (The Blade admin pages in the frontend phase will set a real login URL here.)
         $middleware->redirectGuestsTo(fn (Request $request) => $request->is('api/*') ? null : '/');
